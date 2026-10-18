@@ -86,15 +86,30 @@ public class Customer {
     }
 
     public void applyWaitingPenalty() {
-        throw new UnsupportedOperationException("Customer.applyWaitingPenalty is not implemented yet");
+        if (status == CustomerStatus.WAITING || status == CustomerStatus.SEATED) {
+            satisfaction = Math.max(0, satisfaction - 8);
+        }
     }
 
     public void markPaid() {
-        throw new UnsupportedOperationException("Customer.markPaid is not implemented yet");
+        if (status != CustomerStatus.READY_TO_PAY) {
+            throw new IllegalStateException("Customer " + id + " cannot pay in status " + status);
+        }
+        if (order == null || order.getStatus() != OrderStatus.PAID) {
+            throw new IllegalStateException(
+                    "Customer " + id + " cannot be marked paid before its order is marked PAID");
+        }
+        status = CustomerStatus.PAID;
     }
 
     public void abandon() {
-        throw new UnsupportedOperationException("Customer.abandon is not implemented yet");
+        if (status != CustomerStatus.WAITING && status != CustomerStatus.SEATED) {
+            throw new IllegalStateException("Customer " + id + " cannot abandon in status " + status);
+        }
+        status = CustomerStatus.LEFT;
+        if (order != null) {
+            order.cancel();
+        }
     }
 
     public int getId() {
