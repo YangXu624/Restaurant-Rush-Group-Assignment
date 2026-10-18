@@ -7,7 +7,7 @@ import java.util.List;
  * See docs/class-contracts.md for the implementation contract.
  */
 public class Customer {
-    private int id;
+    private final int id;
     private int satisfaction;
     private CustomerStatus status;
     private int servedTurn;
@@ -15,11 +15,22 @@ public class Customer {
     private Order order;
 
     public Customer(int id) {
-        throw new UnsupportedOperationException("Customer.Customer is not implemented yet");
+        if (id <= 0) {
+            throw new IllegalArgumentException("Customer ID must be positive: " + id);
+        }
+        this.id = id;
+        this.satisfaction = 100;
+        this.status = CustomerStatus.WAITING;
+        this.servedTurn = -1;
+        this.readyToPayTurn = -1;
+        this.order = null;
     }
 
     public MenuItem chooseItem(List<MenuItem> menu) {
-        throw new UnsupportedOperationException("Customer.chooseItem is not implemented yet");
+        if (menu == null || menu.isEmpty()) {
+            throw new IllegalArgumentException("Menu cannot be null or empty");
+        }
+        return menu.get((id - 1) % menu.size());
     }
 
     public void seat() {
@@ -51,26 +62,26 @@ public class Customer {
     }
 
     public int getId() {
-        throw new UnsupportedOperationException("Customer.getId is not implemented yet");
+        return id;
     }
 
     public int getSatisfaction() {
-        throw new UnsupportedOperationException("Customer.getSatisfaction is not implemented yet");
+        return satisfaction;
     }
 
     public CustomerStatus getStatus() {
-        throw new UnsupportedOperationException("Customer.getStatus is not implemented yet");
+        return status;
     }
 
     public Order getOrder() {
-        throw new UnsupportedOperationException("Customer.getOrder is not implemented yet");
+        return order;
     }
 
     public int getServedTurn() {
-        throw new UnsupportedOperationException("Customer.getServedTurn is not implemented yet");
+        return servedTurn;
     }
 
     public int getReadyToPayTurn() {
-        throw new UnsupportedOperationException("Customer.getReadyToPayTurn is not implemented yet");
+        return readyToPayTurn;
     }
 }
