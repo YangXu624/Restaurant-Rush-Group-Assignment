@@ -106,10 +106,10 @@ public class Customer {
         if (status != CustomerStatus.WAITING && status != CustomerStatus.SEATED) {
             throw new IllegalStateException("Customer " + id + " cannot abandon in status " + status);
         }
-        status = CustomerStatus.LEFT;
         if (order != null) {
             order.cancel();
         }
+        status = CustomerStatus.LEFT;
     }
 
     public int getId() {
