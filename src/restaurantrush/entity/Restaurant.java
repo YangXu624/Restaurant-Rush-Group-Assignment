@@ -74,6 +74,12 @@ public class Restaurant {
         if (!waitingQueue.contains(c)) {
             return ActionResult.fail("Customer " + cId + " is not waiting for a table.");
         }
+        // Checked before any change so c.seat() cannot throw after the queue and table
+        // have already been updated.
+        if (c.getStatus() != CustomerStatus.WAITING) {
+            return ActionResult.fail("Customer " + cId + " is not waiting for a table ("
+                    + c.getStatus() + ").");
+        }
         Table table = findTable(tableId);
         if (table == null) {
             return ActionResult.fail("Table " + tableId + " does not exist.");
