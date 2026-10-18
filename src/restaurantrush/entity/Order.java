@@ -5,57 +5,88 @@ package restaurantrush.entity;
  * See docs/class-contracts.md for the implementation contract.
  */
 public class Order {
-    private int id;
-    private MenuItem item;
+    private final int id;
+    private final MenuItem item;
     private OrderStatus status;
     private int remainingUnits;
-    private int billCents;
+    private final int billCents;
 
     public Order(int id, MenuItem item) {
-        throw new UnsupportedOperationException("Order.Order is not implemented yet");
+        if (id <= 0) {
+            throw new IllegalArgumentException("Order ID must be positive: " + id);
+        }
+        if (item == null) {
+            throw new IllegalArgumentException("Order item cannot be null");
+        }
+        if (item.getPreparationUnits() <= 0) {
+            throw new IllegalArgumentException("Order item preparation units must be positive");
+        }
+        this.id = id;
+        this.item = item;
+        this.status = OrderStatus.PLACED;
+        this.remainingUnits = item.getPreparationUnits();
+        this.billCents = item.getPriceCents();
     }
 
     public boolean canPrepare() {
-        throw new UnsupportedOperationException("Order.canPrepare is not implemented yet");
+        return (status == OrderStatus.PLACED || status == OrderStatus.PREPARING) && remainingUnits > 0;
     }
 
     public void prepareOneUnit() {
-        throw new UnsupportedOperationException("Order.prepareOneUnit is not implemented yet");
+        if (!canPrepare()) {
+            throw new IllegalStateException(
+                    "Order " + id + " cannot be prepared in status " + status + " with " + remainingUnits + " units left");
+        }
+        remainingUnits--;
+        if (remainingUnits == 0) {
+            status = OrderStatus.READY;
+        } else {
+            status = OrderStatus.PREPARING;
+        }
     }
 
     public void markServed() {
-        throw new UnsupportedOperationException("Order.markServed is not implemented yet");
+        if (status != OrderStatus.READY) {
+            throw new IllegalStateException("Cannot serve order " + id + " with status " + status);
+        }
+        status = OrderStatus.SERVED;
     }
 
     public void markPaid() {
-        throw new UnsupportedOperationException("Order.markPaid is not implemented yet");
+        if (status != OrderStatus.SERVED) {
+            throw new IllegalStateException("Cannot mark order " + id + " paid with status " + status);
+        }
+        status = OrderStatus.PAID;
     }
 
     public void cancel() {
-        throw new UnsupportedOperationException("Order.cancel is not implemented yet");
+        if (status != OrderStatus.PLACED && status != OrderStatus.PREPARING && status != OrderStatus.READY) {
+            throw new IllegalStateException("Cannot cancel order " + id + " with status " + status);
+        }
+        status = OrderStatus.CANCELLED;
     }
 
     public boolean isReady() {
-        throw new UnsupportedOperationException("Order.isReady is not implemented yet");
+        return status == OrderStatus.READY;
     }
 
     public int getBillCents() {
-        throw new UnsupportedOperationException("Order.getBillCents is not implemented yet");
+        return billCents;
     }
 
     public int getId() {
-        throw new UnsupportedOperationException("Order.getId is not implemented yet");
+        return id;
     }
 
     public OrderStatus getStatus() {
-        throw new UnsupportedOperationException("Order.getStatus is not implemented yet");
+        return status;
     }
 
     public MenuItem getItem() {
-        throw new UnsupportedOperationException("Order.getItem is not implemented yet");
+        return item;
     }
 
     public int getRemainingUnits() {
-        throw new UnsupportedOperationException("Order.getRemainingUnits is not implemented yet");
+        return remainingUnits;
     }
 }
