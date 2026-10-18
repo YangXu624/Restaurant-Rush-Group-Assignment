@@ -34,11 +34,27 @@ public class Customer {
     }
 
     public void seat() {
-        throw new UnsupportedOperationException("Customer.seat is not implemented yet");
+        if (status != CustomerStatus.WAITING) {
+            throw new IllegalStateException("Customer " + id + " cannot be seated with status " + status);
+        }
+        status = CustomerStatus.SEATED;
     }
 
     public void acceptOrder(Order order) {
-        throw new UnsupportedOperationException("Customer.acceptOrder is not implemented yet");
+        if (order == null) {
+            throw new IllegalArgumentException("Order cannot be null");
+        }
+        if (order.getId() != id) {
+            throw new IllegalArgumentException(
+                    "Order ID " + order.getId() + " does not match customer ID " + id);
+        }
+        if (status != CustomerStatus.SEATED) {
+            throw new IllegalStateException("Customer " + id + " cannot accept an order with status " + status);
+        }
+        if (this.order != null) {
+            throw new IllegalStateException("Customer " + id + " already has an order");
+        }
+        this.order = order;
     }
 
     public void markServed(int turn) {
