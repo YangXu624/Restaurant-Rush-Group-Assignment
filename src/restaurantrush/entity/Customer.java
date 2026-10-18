@@ -58,11 +58,31 @@ public class Customer {
     }
 
     public void markServed(int turn) {
-        throw new UnsupportedOperationException("Customer.markServed is not implemented yet");
+        if (turn <= 0) {
+            throw new IllegalArgumentException("Turn must be positive: " + turn);
+        }
+        if (status != CustomerStatus.SEATED) {
+            throw new IllegalStateException("Customer " + id + " cannot be served in status " + status);
+        }
+        if (servedTurn != -1) {
+            throw new IllegalStateException("Customer " + id + " was already served at turn " + servedTurn);
+        }
+        if (order == null) {
+            throw new IllegalStateException("Customer " + id + " cannot be served without an order");
+        }
+        if (order.getStatus() != OrderStatus.SERVED) {
+            throw new IllegalStateException(
+                    "Customer " + id + "'s order is not SERVED, status is " + order.getStatus());
+        }
+        status = CustomerStatus.SERVED;
+        servedTurn = turn;
     }
 
     public void finishEating(int turn) {
-        throw new UnsupportedOperationException("Customer.finishEating is not implemented yet");
+        if (status == CustomerStatus.SERVED && servedTurn != -1 && servedTurn < turn) {
+            status = CustomerStatus.READY_TO_PAY;
+            readyToPayTurn = turn;
+        }
     }
 
     public void applyWaitingPenalty() {
