@@ -12,13 +12,16 @@ mkdir -p build/test-classes
 find tests -name '*.java' -type f | sort > build/test-sources.txt
 javac --release 17 -encoding UTF-8 -Xlint:all -cp build/classes -d build/test-classes @build/test-sources.txt
 
+case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) CP_SEP=';' ;; *) CP_SEP=':' ;; esac
+CP="build/classes${CP_SEP}build/test-classes"
+
 if [ $# -gt 0 ]; then
-  exec java -cp "build/classes:build/test-classes" "$1"
+  exec java -cp "$CP" "$1"
 else
   # Discover and run each test class
   for file in $(find tests -name '*Test.java' -type f | sort); do
     class_name=$(echo "$file" | sed -e 's|^tests/||' -e 's|\.java$||' -e 's|/|.|g')
     printf "Running %s...\n" "$class_name"
-    java -cp "build/classes:build/test-classes" "$class_name"
+    java -cp "$CP" "$class_name"
   done
 fi
