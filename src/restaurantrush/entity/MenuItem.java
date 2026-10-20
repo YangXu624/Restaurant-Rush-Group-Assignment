@@ -5,23 +5,34 @@ package restaurantrush.entity;
  * See docs/class-contracts.md for the implementation contract.
  */
 public class MenuItem {
-    private String name;
-    private int priceCents;
-    private int preparationUnits;
+    private final String name;
+    private final int priceCents;
+    private final int preparationUnits;
 
     public MenuItem(String name, int priceCents, int preparationUnits) {
-        throw new UnsupportedOperationException("MenuItem.MenuItem is not implemented yet");
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Menu item name cannot be null or blank");
+        }
+        if (priceCents < 0) {
+            throw new IllegalArgumentException("Menu item price cannot be negative");
+        }
+        if (preparationUnits <= 0) {
+            throw new IllegalArgumentException("Menu item preparation units must be positive");
+        }
+        this.name = name;
+        this.priceCents = priceCents;
+        this.preparationUnits = preparationUnits;
     }
 
     public int getPriceCents() {
-        throw new UnsupportedOperationException("MenuItem.getPriceCents is not implemented yet");
+        return priceCents;
     }
 
     public int getPreparationUnits() {
-        throw new UnsupportedOperationException("MenuItem.getPreparationUnits is not implemented yet");
+        return preparationUnits;
     }
 
     public String getName() {
-        throw new UnsupportedOperationException("MenuItem.getName is not implemented yet");
+        return name;
     }
 }

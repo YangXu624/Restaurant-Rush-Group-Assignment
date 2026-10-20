@@ -7,7 +7,7 @@ import java.util.List;
  * See docs/class-contracts.md for the implementation contract.
  */
 public class Customer {
-    private int id;
+    private final int id;
     private int satisfaction;
     private CustomerStatus status;
     private int servedTurn;
@@ -15,62 +15,124 @@ public class Customer {
     private Order order;
 
     public Customer(int id) {
-        throw new UnsupportedOperationException("Customer.Customer is not implemented yet");
+        if (id <= 0) {
+            throw new IllegalArgumentException("Customer ID must be positive: " + id);
+        }
+        this.id = id;
+        this.satisfaction = 100;
+        this.status = CustomerStatus.WAITING;
+        this.servedTurn = -1;
+        this.readyToPayTurn = -1;
+        this.order = null;
     }
 
     public MenuItem chooseItem(List<MenuItem> menu) {
-        throw new UnsupportedOperationException("Customer.chooseItem is not implemented yet");
+        if (menu == null || menu.isEmpty()) {
+            throw new IllegalArgumentException("Menu cannot be null or empty");
+        }
+        return menu.get((id - 1) % menu.size());
     }
 
     public void seat() {
-        throw new UnsupportedOperationException("Customer.seat is not implemented yet");
+        if (status != CustomerStatus.WAITING) {
+            throw new IllegalStateException("Customer " + id + " cannot be seated with status " + status);
+        }
+        status = CustomerStatus.SEATED;
     }
 
     public void acceptOrder(Order order) {
-        throw new UnsupportedOperationException("Customer.acceptOrder is not implemented yet");
+        if (order == null) {
+            throw new IllegalArgumentException("Order cannot be null");
+        }
+        if (order.getId() != id) {
+            throw new IllegalArgumentException(
+                    "Order ID " + order.getId() + " does not match customer ID " + id);
+        }
+        if (status != CustomerStatus.SEATED) {
+            throw new IllegalStateException("Customer " + id + " cannot accept an order with status " + status);
+        }
+        if (this.order != null) {
+            throw new IllegalStateException("Customer " + id + " already has an order");
+        }
+        this.order = order;
     }
 
     public void markServed(int turn) {
-        throw new UnsupportedOperationException("Customer.markServed is not implemented yet");
+        if (turn <= 0) {
+            throw new IllegalArgumentException("Turn must be positive: " + turn);
+        }
+        if (status != CustomerStatus.SEATED) {
+            throw new IllegalStateException("Customer " + id + " cannot be served in status " + status);
+        }
+        if (servedTurn != -1) {
+            throw new IllegalStateException("Customer " + id + " was already served at turn " + servedTurn);
+        }
+        if (order == null) {
+            throw new IllegalStateException("Customer " + id + " cannot be served without an order");
+        }
+        if (order.getStatus() != OrderStatus.SERVED) {
+            throw new IllegalStateException(
+                    "Customer " + id + "'s order is not SERVED, status is " + order.getStatus());
+        }
+        status = CustomerStatus.SERVED;
+        servedTurn = turn;
     }
 
     public void finishEating(int turn) {
-        throw new UnsupportedOperationException("Customer.finishEating is not implemented yet");
+        if (status == CustomerStatus.SERVED && servedTurn != -1 && servedTurn < turn) {
+            status = CustomerStatus.READY_TO_PAY;
+            readyToPayTurn = turn;
+        }
     }
 
     public void applyWaitingPenalty() {
-        throw new UnsupportedOperationException("Customer.applyWaitingPenalty is not implemented yet");
+        if (status == CustomerStatus.WAITING || status == CustomerStatus.SEATED) {
+            satisfaction = Math.max(0, satisfaction - 8);
+        }
     }
 
     public void markPaid() {
-        throw new UnsupportedOperationException("Customer.markPaid is not implemented yet");
+        if (status != CustomerStatus.READY_TO_PAY) {
+            throw new IllegalStateException("Customer " + id + " cannot pay in status " + status);
+        }
+        if (order == null || order.getStatus() != OrderStatus.PAID) {
+            throw new IllegalStateException(
+                    "Customer " + id + " cannot be marked paid before its order is marked PAID");
+        }
+        status = CustomerStatus.PAID;
     }
 
     public void abandon() {
-        throw new UnsupportedOperationException("Customer.abandon is not implemented yet");
+        if (status != CustomerStatus.WAITING && status != CustomerStatus.SEATED) {
+            throw new IllegalStateException("Customer " + id + " cannot abandon in status " + status);
+        }
+        if (order != null) {
+            order.cancel();
+        }
+        status = CustomerStatus.LEFT;
     }
 
     public int getId() {
-        throw new UnsupportedOperationException("Customer.getId is not implemented yet");
+        return id;
     }
 
     public int getSatisfaction() {
-        throw new UnsupportedOperationException("Customer.getSatisfaction is not implemented yet");
+        return satisfaction;
     }
 
     public CustomerStatus getStatus() {
-        throw new UnsupportedOperationException("Customer.getStatus is not implemented yet");
+        return status;
     }
 
     public Order getOrder() {
-        throw new UnsupportedOperationException("Customer.getOrder is not implemented yet");
+        return order;
     }
 
     public int getServedTurn() {
-        throw new UnsupportedOperationException("Customer.getServedTurn is not implemented yet");
+        return servedTurn;
     }
 
     public int getReadyToPayTurn() {
-        throw new UnsupportedOperationException("Customer.getReadyToPayTurn is not implemented yet");
+        return readyToPayTurn;
     }
 }
