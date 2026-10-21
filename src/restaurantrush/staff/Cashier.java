@@ -23,10 +23,7 @@ public class Cashier {
         }
         // Restaurant only returns customers who became ready before this turn.
         Customer payer = r.oldestEligiblePayer(turn);
-        if (payer == null) {
-            return false;
-        }
-        if (!r.recordPayment(payer, turn)) {
+        if (payer == null || !r.recordPayment(payer, turn)) {
             return false;
         }
         lastPaidTurn = turn;

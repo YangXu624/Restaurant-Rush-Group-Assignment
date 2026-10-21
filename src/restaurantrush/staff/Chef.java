@@ -23,12 +23,8 @@ public class Chef {
         }
 
         o.prepareOneUnit();
-        String dish = o.getItem().getName();
-        if (o.isReady()) {
-            return ActionResult.ok("Cooked " + dish + " for customer " + o.getId()
-                    + "; it is now READY.");
-        }
-        return ActionResult.ok("Cooked one unit of " + dish + " for customer " + o.getId()
-                + "; " + o.getRemainingUnits() + " unit(s) left.");
+        String progress = o.isReady() ? "it is now READY" : o.getRemainingUnits() + " unit(s) left";
+        return ActionResult.ok("Cooked " + o.getItem().getName() + " for customer " + o.getId()
+                + "; " + progress + ".");
     }
 }

@@ -66,8 +66,6 @@ public class WaiterTest {
 
     private static void testTakeOrderUsesCustomerMenuChoice() {
         Restaurant r = new Restaurant();
-        arrive(r, 1);
-        arrive(r, 2);
         arrive(r, 3);
         r.seat(3, 1);
 
@@ -169,17 +167,5 @@ public class WaiterTest {
         if (condition) {
             throw new AssertionError(message + " - Expected false, got true");
         }
-    }
-
-    private static void assertThrows(Class<? extends Throwable> expectedType, Runnable executable, String message) {
-        try {
-            executable.run();
-        } catch (Throwable t) {
-            if (expectedType.isInstance(t)) {
-                return;
-            }
-            throw new AssertionError(message + " - Threw unexpected exception type: " + t.getClass().getName(), t);
-        }
-        throw new AssertionError(message + " - Did not throw any exception");
     }
 }
