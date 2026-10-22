@@ -12,6 +12,7 @@ public class CashierTest {
         testNotEligibleOnSameTurnAsReady();
         testOnlyOnePaymentPerTurn();
         testPaysOldestFirst();
+        testSameTurnTieGoesToLowerId();
 
         System.out.println("All Cashier tests passed successfully!");
     }
@@ -68,6 +69,19 @@ public class CashierTest {
         assertTrue(new Cashier().collectOne(r, 4), "Payment should succeed");
         assertEqual(CustomerStatus.PAID, higherId.getStatus(), "Earliest-ready customer pays first");
         assertEqual(CustomerStatus.READY_TO_PAY, lowerId.getStatus(), "Later customer should still wait");
+    }
+
+    private static void testSameTurnTieGoesToLowerId() {
+        Restaurant r = new Restaurant();
+        // Customer 2 arrives first, so the tie-breaker (not arrival order) must pick customer 1.
+        Customer higherId = served(r, 2, 1);
+        Customer lowerId = served(r, 1, 2);
+        higherId.finishEating(2);
+        lowerId.finishEating(2);
+
+        assertTrue(new Cashier().collectOne(r, 3), "Payment should succeed");
+        assertEqual(CustomerStatus.PAID, lowerId.getStatus(), "Lower ID pays first on a tie");
+        assertEqual(CustomerStatus.READY_TO_PAY, higherId.getStatus(), "Higher ID should still wait");
     }
 
     /** Arrives, seats, orders a 1-unit dish, serves it on turn 1 and finishes eating on turn 2. */
