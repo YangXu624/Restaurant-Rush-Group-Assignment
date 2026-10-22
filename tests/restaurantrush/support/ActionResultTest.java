@@ -5,6 +5,7 @@ public class ActionResultTest {
     public static void main(String[] args) {
         testOk();
         testFail();
+        testNullMessageRejected();
 
         System.out.println("All ActionResult tests passed successfully!");
     }
@@ -19,6 +20,15 @@ public class ActionResultTest {
         ActionResult result = ActionResult.fail("Table 3 does not exist.");
         assertFalse(result.isSuccess(), "fail() should not be a success");
         assertEqual("Table 3 does not exist.", result.getMessage(), "fail() message mismatch");
+    }
+
+    private static void testNullMessageRejected() {
+        try {
+            ActionResult.ok(null);
+        } catch (NullPointerException expected) {
+            return;
+        }
+        throw new AssertionError("ok(null) should throw NullPointerException");
     }
 
     private static void assertEqual(Object expected, Object actual, String message) {

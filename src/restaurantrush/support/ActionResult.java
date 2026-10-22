@@ -1,5 +1,7 @@
 package restaurantrush.support;
 
+import java.util.Objects;
+
 /**
  * Immutable outcome of a staff action or explicit wait: whether it was accepted and
  * a short message for the CLI. It has no printing logic and no mutators.
@@ -12,7 +14,7 @@ public class ActionResult {
 
     private ActionResult(boolean success, String message) {
         this.success = success;
-        this.message = message;
+        this.message = Objects.requireNonNull(message, "ActionResult message cannot be null");
     }
 
     public static ActionResult ok(String message) {
