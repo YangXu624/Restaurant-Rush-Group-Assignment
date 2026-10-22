@@ -10,9 +10,9 @@ import restaurantrush.staff.Waiter;
 import restaurantrush.support.ActionResult;
 
 /**
- * Standalone M4 coordination tests, not real staff/result/snapshot integration.
- * Factory-dependent failures, explicit waits and snapshots remain blocked by
- * teammate stubs; they are not silently skipped or asserted to throw.
+ * Standalone M4 coordination tests using real ActionResult factories and staff doubles.
+ * These tests require the M3 ActionResult implementation. Controller-generated
+ * failures, explicit waits, snapshots and real staff integration are not covered.
  */
 public class GameControllerTest {
     public static void main(String[] args) {
@@ -24,7 +24,8 @@ public class GameControllerTest {
         testStaffExceptionsPropagate();
         testCompletionAndVictory();
         System.out.println("All GameController coordination tests passed; "
-                + "factory, snapshot and real staff integration remain dependency-blocked.");
+                + "real ActionResult factories exercised; controller-generated failures, explicit waits, "
+                + "snapshots and real staff integration are not covered.");
     }
 
     private static void testConstructorNulls() {
@@ -65,7 +66,7 @@ public class GameControllerTest {
                 f.manager.recordChefTask();
                 f.controller.finishTurn();
                 f.controller.startTurn();
-                f.waiter.result = new StaffResult(success);
+                f.waiter.result = success ? ActionResult.ok("Staff test result") : ActionResult.fail("Staff test result");
                 ActionResult actual = switch (operation) {
                     case "seat" -> f.controller.seatCustomer(37, 2);
                     case "order" -> f.controller.takeOrder(37);
@@ -95,13 +96,13 @@ public class GameControllerTest {
             Fixture f = new Fixture();
             f.controller.startTurn();
             Customer customer = f.restaurant.findCustomer(1);
-            // Set up through implemented entity APIs; Restaurant.seat needs stub factories.
+            // Set up the registered order directly to isolate controller forwarding from seating.
             customer.seat();
             Order order = new Order(1, f.restaurant.getMenu().get(2));
             customer.acceptOrder(order);
             f.restaurant.registerOrder(order);
             f.manager.recordWaiterTask();
-            f.chef.result = new StaffResult(success);
+            f.chef.result = success ? ActionResult.ok("Staff test result") : ActionResult.fail("Staff test result");
             same(f.chef.result, f.controller.prepareOrder(1), "Return exact Chef result");
             same(order, f.chef.order, "Find and forward registered order instance");
             equal(1, f.chef.calls, "Invoke Chef once");
@@ -175,14 +176,6 @@ public class GameControllerTest {
         final RecordingWaiter waiter = new RecordingWaiter();
         final RecordingChef chef = new RecordingChef();
         final GameController controller = new GameController(restaurant, manager, waiter, chef);
-    }
-
-    /** Represents staff output only; does not exercise real ActionResult factories/accessors. */
-    private static final class StaffResult extends ActionResult {
-        private final boolean success;
-        StaffResult(boolean success) { this.success = success; }
-        @Override public boolean isSuccess() { return success; }
-        @Override public String getMessage() { return "Staff test result"; }
     }
 
     private static final class RecordingWaiter extends Waiter {
