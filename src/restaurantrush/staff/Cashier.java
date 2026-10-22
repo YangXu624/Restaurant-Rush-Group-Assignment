@@ -1,15 +1,32 @@
 package restaurantrush.staff;
 
+import restaurantrush.entity.Customer;
 import restaurantrush.entity.Restaurant;
 
 /**
- * Stage 1 skeleton. Owner: M3: Marcus.
- * See docs/class-contracts.md for the implementation contract.
+ * Collects at most one payment per turn. Automatic: TurnManager calls it during
+ * turn resolution rather than the manager choosing it.
+ *
+ * <p>Owner: M3: Marcus. See docs/class-contracts.md for the implementation contract.
  */
 public class Cashier {
-    private int lastPaidTurn;
+    private int lastPaidTurn = -1;
 
+    /**
+     * Takes payment from the oldest eligible READY_TO_PAY customer. Returns false if
+     * a payment was already taken this turn, nobody is eligible or the payment fails.
+     */
     public boolean collectOne(Restaurant r, int turn) {
-        throw new UnsupportedOperationException("Cashier.collectOne is not implemented yet");
+        // Brief 3.2 step 4: the Cashier handles one customer per turn.
+        if (lastPaidTurn == turn) {
+            return false;
+        }
+        // Restaurant only returns customers who became ready before this turn.
+        Customer payer = r.oldestEligiblePayer(turn);
+        if (payer == null || !r.recordPayment(payer, turn)) {
+            return false;
+        }
+        lastPaidTurn = turn;
+        return true;
     }
 }
