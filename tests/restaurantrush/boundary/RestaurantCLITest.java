@@ -7,8 +7,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Scanner;
+import restaurantrush.control.GameController;
+import restaurantrush.control.TurnManager;
 import restaurantrush.entity.CustomerStatus;
 import restaurantrush.entity.OrderStatus;
+import restaurantrush.entity.Restaurant;
+import restaurantrush.staff.Cashier;
+import restaurantrush.staff.Chef;
+import restaurantrush.staff.Waiter;
 import restaurantrush.support.CustomerView;
 import restaurantrush.support.GameSnapshot;
 import restaurantrush.support.TableView;
@@ -140,7 +146,9 @@ public class RestaurantCLITest {
 
         Fixture(String commands) {
             input = new Scanner(commands);
-            cli = new RestaurantCLI(input, new PrintStream(bytes, true, StandardCharsets.UTF_8));
+            GameController controller = new GameController(new Restaurant(),
+                    new TurnManager(new Cashier()), new Waiter(), new Chef());
+            cli = new RestaurantCLI(controller, input, new PrintStream(bytes, true, StandardCharsets.UTF_8));
         }
 
         String text() {

@@ -5,6 +5,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Scanner;
 import restaurantrush.control.GameController;
+import restaurantrush.support.ActionResult;
 import restaurantrush.support.CustomerView;
 import restaurantrush.support.GameSnapshot;
 import restaurantrush.support.TableView;
@@ -15,34 +16,43 @@ import restaurantrush.support.TableView;
  * <p>Owner: M5: Toshiki. See docs/class-contracts.md for the contract.
  */
 public class RestaurantCLI {
-    private GameController controller;
+    private final GameController controller;
     private final Scanner input;
     private final PrintStream output;
 
     /**
-     * Creates the input/display boundary independently of controller integration.
+     * Uses the supplied shared controller for every game action and state read.
      * The caller owns these streams; the CLI does not close them.
      */
-    public RestaurantCLI(Scanner input, PrintStream output) {
+    public RestaurantCLI(GameController controller, Scanner input, PrintStream output) {
+        this.controller = Objects.requireNonNull(controller, "Controller cannot be null");
         this.input = Objects.requireNonNull(input, "Input scanner cannot be null");
         this.output = Objects.requireNonNull(output, "Output stream cannot be null");
     }
 
-    // TODO B2: Inject the shared controller and implement the turn loop/outcome.
-
     public void run() {
-        throw new UnsupportedOperationException("RestaurantCLI.run is not implemented yet");
+        while (!controller.isFinished()) {
+            controller.startTurn();
+            GameSnapshot start = controller.getSnapshot();
+            displayState(start);
+            if (!chooseTask(true) || !chooseTask(false)) {
+                showFeedback("Input ended. The current turn was not completed.");
+                return;
+            }
+            // Resolution failures propagate: automatic events may already have run.
+            controller.finishTurn();
+            output.println("End of turn " + start.turn());
+            displayStatistics(controller.getSnapshot());
+            output.println("Turns used: " + start.turn());
+            output.flush();
+        }
+        displayOutcome(controller.isVictory());
     }
 
     public void displayState(GameSnapshot snapshot) {
         Objects.requireNonNull(snapshot, "Snapshot cannot be null");
         output.println("Turn " + snapshot.turn());
-        output.printf(Locale.ROOT, "Revenue: $%d.%02d%n",
-                snapshot.revenueCents() / 100, snapshot.revenueCents() % 100);
-        output.println("Average paid satisfaction: " + (snapshot.averagePaidSatisfaction() == null
-                ? "N/A" : String.format(Locale.ROOT, "%.2f", snapshot.averagePaidSatisfaction())));
-        output.printf("Paid: %d | Served: %d | Unhappy departures: %d%n",
-                snapshot.paidCount(), snapshot.servedCount(), snapshot.abandonedCount());
+        displayStatistics(snapshot);
         output.println("Waiting queue: " + (snapshot.waitingCustomerIds().isEmpty()
                 ? "empty" : snapshot.waitingCustomerIds()));
         output.println("Tables:");
@@ -126,6 +136,49 @@ public class RestaurantCLI {
     }
 
     public void displayOutcome(boolean won) {
-        throw new UnsupportedOperationException("RestaurantCLI.displayOutcome is not implemented yet");
+        if (!controller.isFinished()) {
+            throw new IllegalStateException("Cannot display an outcome before the game finishes");
+        }
+        GameSnapshot finalState = controller.getSnapshot();
+        output.println(won ? "Victory" : "Defeat");
+        displayStatistics(finalState);
+        output.println("Turns used: " + finalState.turn());
+        output.flush();
+    }
+
+    private boolean chooseTask(boolean waiter) {
+        while (true) {
+            String command = waiter ? readWaiterChoice() : readChefChoice();
+            if (command == null) {
+                return false;
+            }
+            String[] parts = command.split(" ");
+            ActionResult result;
+            if (waiter) {
+                result = switch (parts[0]) {
+                    case "seat" -> controller.seatCustomer(Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+                    case "order" -> controller.takeOrder(Integer.parseInt(parts[1]));
+                    case "serve" -> controller.serveOrder(Integer.parseInt(parts[1]));
+                    case "wait" -> controller.waitWaiter();
+                    default -> throw new IllegalStateException("Unexpected parsed Waiter command");
+                };
+            } else {
+                result = parts[0].equals("wait") ? controller.waitChef()
+                        : controller.prepareOrder(Integer.parseInt(parts[1]));
+            }
+            showFeedback(result.getMessage());
+            if (result.isSuccess()) {
+                return true;
+            }
+        }
+    }
+
+    private void displayStatistics(GameSnapshot snapshot) {
+        output.printf(Locale.ROOT, "Revenue: $%d.%02d%n",
+                snapshot.revenueCents() / 100, snapshot.revenueCents() % 100);
+        output.println("Average paid satisfaction: " + (snapshot.averagePaidSatisfaction() == null
+                ? "N/A" : String.format(Locale.ROOT, "%.2f", snapshot.averagePaidSatisfaction())));
+        output.printf("Paid: %d | Served: %d | Unhappy departures: %d%n",
+                snapshot.paidCount(), snapshot.servedCount(), snapshot.abandonedCount());
     }
 }
