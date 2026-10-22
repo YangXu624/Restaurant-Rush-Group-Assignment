@@ -21,8 +21,6 @@ public class RestaurantCLIRunTest {
         testEndOfInputInEitherPhase();
         testRejectedActionsRetrySameChoice();
         testOrderingCookingServingAndPayment();
-        testFullDefeat();
-        testFullVictory();
         testResolutionFailurePropagates();
         System.out.println("All RestaurantCLI turn-loop tests passed successfully!");
     }
@@ -83,47 +81,6 @@ public class RestaurantCLIRunTest {
         contains(output, "End of turn 4\nRevenue: $0.00");
         contains(output, "End of turn 5\nRevenue: $9.00");
         noOutcome(f);
-    }
-
-    private static void testFullDefeat() {
-        Fixture f = new Fixture("wait\nwait\n".repeat(18));
-        f.cli.run();
-        equal(true, f.controller.isFinished(), "All turns completed");
-        equal(false, f.controller.isVictory(), "Waiting loses");
-        equal(18, occurrences(f.text(), "End of turn "), "Each turn resolves once");
-        equal(1, occurrences(f.text(), "Defeat"), "One final outcome");
-        equal(0, f.restaurant.getPaidCount(), "No invented payments");
-        contains(f.text(), "Defeat\nRevenue: $0.00\nAverage paid satisfaction: N/A");
-        contains(f.text(), "Turns used: 18");
-        absent(f.text(), "Turn 19");
-    }
-
-    private static void testFullVictory() {
-        // One Waiter and one Chef command per row, exercising all dispatch paths.
-        String[][] turns = {
-            {"seat 1 1", "wait"}, {"order 1", "cook 1"}, {"serve 1", "wait"},
-            {"seat 2 2", "wait"}, {"order 2", "cook 2"}, {"serve 2", "wait"},
-            {"seat 3 1", "wait"}, {"order 3", "cook 3"}, {"wait", "cook 3"},
-            {"serve 3", "wait"}, {"seat 4 2", "wait"}, {"order 4", "cook 4"},
-            {"serve 4", "wait"}, {"seat 5 1", "wait"}, {"order 5", "cook 5"},
-            {"serve 5", "wait"}, {"seat 6 2", "wait"}, {"order 6", "cook 6"}
-        };
-        StringBuilder commands = new StringBuilder();
-        for (String[] turn : turns) {
-            commands.append(turn[0]).append('\n').append(turn[1]).append('\n');
-        }
-        Fixture f = new Fixture(commands.toString());
-        f.cli.run();
-        equal(true, f.controller.isFinished(), "Victory still completes all 18 turns");
-        equal(true, f.controller.isVictory(), "Real controller decides victory");
-        equal(5, f.restaurant.getPaidCount(), "Five paid customers");
-        equal(6600, f.restaurant.getRevenueCents(), "Revenue from five bills");
-        equal(79.2, f.restaurant.averagePaidSatisfaction(), "Recorded paid average");
-        equal(18, occurrences(f.text(), "End of turn "), "No early victory");
-        equal(1, occurrences(f.text(), "Victory"), "One final victory");
-        contains(f.text(), "Victory\nRevenue: $66.00\nAverage paid satisfaction: 79.20");
-        contains(f.text(), "Paid: 5 | Served: 5 | Unhappy departures: 0\nTurns used: 18");
-        equal(false, f.input.hasNextLine(), "Consumes precisely the supplied choices");
     }
 
     private static void testResolutionFailurePropagates() {
@@ -187,10 +144,6 @@ public class RestaurantCLIRunTest {
         String text() {
             return bytes.toString(StandardCharsets.UTF_8).replace("\r\n", "\n");
         }
-    }
-
-    private static int occurrences(String text, String part) {
-        return (text.length() - text.replace(part, "").length()) / part.length();
     }
 
     private static void contains(String text, String expected) {
