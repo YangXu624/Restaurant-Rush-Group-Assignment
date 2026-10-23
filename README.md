@@ -110,7 +110,7 @@ Automated end-to-end runs using standard input fixtures:
 ./run.sh < tests/fixtures/m5/invalid-input.txt
 ```
 
-Detailed walkthroughs, step-by-step turn metrics, and full transcript outputs are documented in [docs/test-notes.md](docs/test-notes.md).
+Reproducible Stage 1 victory and defeat scenarios, including commands, test fixtures, expected results, and verified outcomes, are documented in [docs/test-notes.md](docs/test-notes.md).
 
 ---
 

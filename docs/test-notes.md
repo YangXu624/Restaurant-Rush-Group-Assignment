@@ -56,8 +56,6 @@ The working tree was clean before this documentation was added. A fresh temporar
 
 No local `stage-1` tag existed when checked with `git tag --list stage-1`, so tagged-version verification was not possible. No remote tags were fetched and no tag was created. Repeat these commands against the eventual `stage-1` checkout before submission.
 
-## Coverage limits and documentation discrepancy
+## Coverage limits
 
 The two gameplay fixtures demonstrate one victory and one defeat, but do not separately demonstrate a CLI defeat caused solely by each individual target. Those independent threshold checks are direct controller tests using supplied statistics, as described above. No mismatch was observed in the executed scenarios.
-
-README currently promises detailed turn-by-turn walkthroughs and full transcripts in this file. These notes intentionally provide concise reproduction commands and verified final metrics; the CLI commands produce the full transcripts. README was not changed by this documentation task.
