@@ -98,8 +98,14 @@ public class Restaurant {
     /**
      * Serves a seated customer's READY order. Changes nothing on failure.
      * The Waiter-before-Chef timing is enforced by GameController and TurnManager.
+     *
+     * @throws IllegalArgumentException if the turn is not positive
      */
     public ActionResult serve(int customerId, int turn) {
+        // Checked before any change so c.markServed() cannot throw after the order is SERVED.
+        if (turn <= 0) {
+            throw new IllegalArgumentException("Turn must be positive: " + turn);
+        }
         Customer c = findCustomer(customerId);
         if (c == null) {
             return ActionResult.fail("Customer " + customerId + " has not arrived.");
@@ -191,6 +197,10 @@ public class Restaurant {
         if (order == null || order.getStatus() != OrderStatus.SERVED) {
             return false;
         }
+        // Only the order registered here for this customer can be charged.
+        if (findOrder(c.getId()) != order) {
+            return false;
+        }
         Table table = findTableOf(c);
         if (table == null) {
             return false;
@@ -236,12 +246,14 @@ public class Restaurant {
                     "Customer " + c.getId() + " is neither queued nor at a table");
         }
 
-        // Brief 3.2 step 5: a customer who reaches 0 leaves without paying; free the
-        // table and cancel any unfinished order (done in Customer.abandon()).
+        // Brief 3.2 step 5: a customer who reaches 0 leaves without paying; cancel any
+        // unfinished order (done in Customer.abandon()) and free the table.
+        // Customer.abandon() goes first: it changes nothing if the order cannot be
+        // cancelled, so the queue and table are only updated once it has succeeded.
+        c.abandon();
         if (!waitingQueue.remove(c)) {
             table.release();
         }
-        c.abandon();
         abandonedCount++; // Brief 3.5: unhappy departures
     }
 
