@@ -39,9 +39,10 @@ The simulation runs for a fixed sequence of **18 turns**. The player manages res
   - Customers begin with **100** satisfaction.
   - While `WAITING` (in queue) or `SEATED` (waiting for food), satisfaction decreases by **8 points per turn** (clamped at 0).
   - If satisfaction drops to 0 at the end of a turn, the customer abandons the restaurant (`LEFT`), freeing any table and cancelling their order.
-  - Once `SERVED`, satisfaction freezes. The customer eats for 1 full turn, then transitions to `READY_TO_PAY`.
+  - Once `SERVED`, satisfaction freezes. The customer eats for 1 full turn (`servedTurn < currentTurn`), then transitions to `READY_TO_PAY`.
 - **Cashier Billing:**
-  - The Cashier collects payment automatically at the end of each turn from at most **one** `READY_TO_PAY` customer.
+  - The Cashier collects payment automatically at the end of each turn from at most **one** eligible `READY_TO_PAY` customer.
+  - Customers can only pay from the turn *after* they become ready (`readyToPayTurn < currentTurn`). Even though eating completes before Cashier collection, customers who just became ready that turn are not eligible yet (e.g., served on turn 3 $\to$ finishes eating on turn 4 $\to$ eligible to pay from turn 5).
   - Priority: earliest ready-to-pay turn; ties are broken by lower customer ID.
   - Upon payment, revenue is collected, the table is freed, and the customer transitions to `PAID`.
 
@@ -122,14 +123,14 @@ src/restaurantrush/
 ├── boundary/
 │   └── RestaurantCLI.java    # Text interface, prompt loop, snapshot rendering
 ├── control/
-│   ├── GameController.java   # Top-level gameplay facade & action routing
-│   └── TurnManager.java      # Turn lifecycle, arrival clock, victory evaluator
+│   ├── GameController.java   # Top-level gameplay facade, action routing, victory evaluator
+│   └── TurnManager.java      # Turn lifecycle, arrival clock, staff phase tracking
 ├── entity/
 │   ├── Customer.java         # Lifecycle state, satisfaction tracking
 │   ├── CustomerStatus.java   # WAITING, SEATED, SERVED, READY_TO_PAY, PAID, LEFT
 │   ├── MenuItem.java         # Name, price (cents), cooking time (units)
 │   ├── Order.java            # Dish association, preparation progress, status
-│   ├── OrderStatus.java      # ORDERED, PREPARING, READY, SERVED, PAID, CANCELLED
+│   ├── OrderStatus.java      # PLACED, PREPARING, READY, SERVED, PAID, CANCELLED
 │   ├── Restaurant.java       # Central aggregate: tables, queue, orders, revenue
 │   └── Table.java            # Table ID and seated customer tracking
 ├── staff/
@@ -152,7 +153,7 @@ The team successfully aligned and closed all Stage 1 open items from Section 9 o
 1. **System Construction & Injection:**
    `Main.java` instantiates a single shared `Restaurant`, `TurnManager`, staff members (`Waiter`, `Chef`, `Cashier`), and connects them through `GameController` and `RestaurantCLI`.
 2. **Error Handling & Invariants:**
-   Invalid programmatic parameters throw `IllegalArgumentException`; illegal lifecycle state calls throw `IllegalStateException`. Player interaction mistakes return clean `ActionResult.fail(reason)` responses without mutating domain state or consuming turns.
+   Invalid programmatic parameters throw `IllegalArgumentException`; illegal lifecycle state calls throw `IllegalStateException`. Player interaction mistakes return clean `ActionResult.fail(reason)` responses without mutating domain state or consuming turns. (Note: as documented under Section 9 discrepancies in [docs/class-contracts.md](docs/class-contracts.md), certain boundary/support classes like `RestaurantCLI`, `ActionResult`, and `GameSnapshot` use `Objects.requireNonNull` which throws `NullPointerException` for specific null inputs).
 3. **View Snapshot Immutability:**
    Domain entities are never leaked directly to the boundary. `GameSnapshot` uses Java 17 records (`CustomerView`, `TableView`) and unmodifiable collections. All arrived customers (active, paid, and departed) are retained in historical snapshots for complete visibility.
 4. **Turn Accounting:**
