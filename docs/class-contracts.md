@@ -1,8 +1,8 @@
 # Class contracts
 
-This document records the team's **Stage 1** design from `18oct_meeting.pdf` (18 October meeting, pages 1–18), checked against `SC2002_Restaurant_Rush_Group_Assignment.docx`. It defines the responsibilities and shared interfaces that members can implement against. It is a design contract, not a claim that these classes already exist.
+This document records the team's **Stage 1** design from `18oct_meeting.pdf` (18 October meeting, pages 1–18), checked against `SC2002_Restaurant_Rush_Group_Assignment.docx`. It defines the responsibilities and shared interfaces that members can implement against. It includes the decisions confirmed during subsequent group meetings and remains the main implementation reference.
 
-The meeting's class names, ownership, attributes and operations are preserved. Java signatures below use normal constructor syntax (no return type). Details inferred to make the contracts consistent are identified under [Clarifications and open decisions](#clarifications-and-open-decisions). Stage 2 and Stage 3 classes are outside this meeting design and must not be added to the Stage 1 runnable version.
+The meeting's class names and ownership are preserved; agreed wiring and display details are included below. Java signatures below use normal constructor syntax (no return type). Details inferred to make the contracts consistent are identified under [Clarifications and open decisions](#9-clarifications-and-open-decisions). Stage 2 and Stage 3 classes are outside this meeting design and must not be added to the Stage 1 runnable version.
 
 ## 1. Ownership and responsibilities
 
@@ -16,14 +16,15 @@ The meeting's class names, ownership, attributes and operations are preserved. J
 
 ## 2. Shared conventions and invariants
 
+- Target Java 17. `Main.java` initializes and connects the game components using shared instances, then launches the CLI.
 - All entity and control attributes are private. Public operations are listed below. Record components expose their standard Java accessors, such as `snapshot.turn()`.
 - Money is stored as integer cents and displayed as dollars with two decimal places. Stage 1 bills are locked to the selected menu item's price when the order is created.
 - Player-requested actions return `ActionResult`. Failure explains the problem, leaves game state unchanged and does not consume the staff choice. An explicit `wait` succeeds and consumes that choice.
-- Internal lifecycle misuse is distinct from invalid player input. The meeting explicitly requires `IllegalStateException` for invalid turn resolution, invalid order preparation and releasing an empty table. Other exception details remain an integration decision; see Section 9.
+- Use `IllegalArgumentException` for invalid parameters, `IllegalStateException` for invalid lifecycle operations, and `ActionResult.fail(...)` for invalid player actions. Existing boolean-returning operations retain their documented failure results. Current implementation discrepancies are noted in Section 9.
 - No domain, staff or control object reads input or prints output. `RestaurantCLI` handles interaction; `ActionResult` carries feedback and `GameSnapshot` carries display state.
 - A customer is either queued or seated, never both. A table holds at most one customer, and a customer occupies at most one table. A table remains occupied through eating and waiting for payment.
 - Each customer has at most one order. Its ID equals the customer's ID. The customer's order reference and the restaurant's order registry refer to the same object.
-- Paid and departed customers and their orders remain in the historical lists. They are excluded from active customers and the waiting queue.
+- Paid and departed customers and their orders remain in the historical lists. `PAID` and `LEFT` customers are excluded from active customers and the waiting queue, but included in immutable display views. Creating views must not modify the underlying entities.
 - Satisfaction stays in `[0, 100]`. Only `WAITING` and `SEATED` customers lose satisfaction, at 8 points per turn in Stage 1, clamped to zero.
 - Revenue includes only successful payments, once each. Served count, abandoned count, paid count and paid satisfaction total are updated once per corresponding event.
 - Collection getters return read-only copies. These copies still contain domain entities; the CLI must receive immutable view records instead of those mutable references.
@@ -53,19 +54,27 @@ Reads commands, invokes `GameController`, and displays returned state and feedba
 | --- | --- |
 | `GameController controller` | The controller for player actions and state access |
 | `Scanner input` | Command input |
+| `PrintStream output` | Destination for CLI output |
 
 | Public operation | Contract |
 | --- | --- |
-| `void run()` | Start each turn through the controller, then display its snapshot. Read and retry Waiter commands until one succeeds, then read and retry Chef commands until one succeeds. Finish the turn. Repeat until the game finishes; stop cleanly if input ends. |
+| `RestaurantCLI(GameController controller, Scanner input, PrintStream output)` | Store the shared controller and supplied streams; the caller owns the streams. |
+| `void run()` | Start each turn through the controller, then display its snapshot. Read and retry Waiter commands until one succeeds, then read and retry Chef commands until one succeeds. After `finishTurn()` succeeds, display results using the saved turn number as the last completed turn. Repeat until the game finishes; stop cleanly if input ends. |
 | `void displayState(GameSnapshot snapshot)` | Show turn, revenue, average paid satisfaction, waiting queue, tables, customer satisfaction and status, order state and progress, and staff availability. Show `N/A` when average paid satisfaction is `null`. |
-| `String readWaiterChoice()` | Read `seat <customerId> <tableId>`, `order <customerId>`, `serve <customerId>`, or `wait`. |
-| `String readChefChoice()` | Read `cook <customerId>` or `wait`. |
+| `String readWaiterChoice()` | Prompt for and read `seat <customerId> <tableId>`, `order <customerId>`, `serve <customerId>`, or `wait`. Return a normalised valid command, or `null` at End of File. |
+| `String readChefChoice()` | Prompt for and read `cook <customerId>` or `wait`. Return a normalised valid command, or `null` at End of File. |
 | `void showFeedback(String message)` | Print an action's success or failure message. |
 | `void displayOutcome(boolean won)` | After turn 18 completes, display Victory or Defeat. Obtain the final snapshot from the controller and show served count, unhappy departures, paid count, revenue, average paid satisfaction and turns used. |
 
-Malformed commands and non-integer IDs must be explained and retried without consuming a choice. End of input must not fabricate completed turns or a final outcome. Constructor wiring and end-of-turn display timing are covered in Section 9.
+Malformed commands and non-integer IDs must be explained and retried without consuming a choice. End of input must not fabricate completed turns or a final outcome. The current CLI retains the start-of-turn snapshot in a local variable and uses `start.turn()` after successful completion; it does not need a separate counter field. Do not use the advanced snapshot turn as the completed-turn count. At final completion, the snapshot remains at turn 18.
 
 ## 4. Control contracts
+
+### Main
+
+**Kind:** Application entry point
+
+`public static void main(String[] args)` creates one `Restaurant`, `Cashier`, `TurnManager`, `Waiter`, `Chef` and `GameController`. Pass the same Cashier to TurnManager, and the shared Restaurant, TurnManager, Waiter and Chef to GameController. Construct RestaurantCLI with that controller, a Scanner over standard input and `System.out`, then call `run()`. Main performs wiring, not game rules.
 
 ### GameController
 
@@ -115,6 +124,7 @@ Owns the turn lifecycle, scheduled arrivals, staff choice limits and automatic e
 
 | Public operation | Preconditions and effects |
 | --- | --- |
+| `TurnManager(Cashier cashier)` | Store the shared Cashier; reject null with `IllegalArgumentException`. |
 | `void beginTurn(Restaurant r)` | Require a not-yet-started turn and an unfinished game. Mark the turn started, reset staff and resolution flags, and add its scheduled arrival if any. Reject a duplicate start or a start after completion. |
 | `boolean canAssignWaiter()` | True iff the turn is started, unresolved and unfinished, and the Waiter choice is unused. |
 | `boolean canAssignChef()` | True iff the turn is started, unresolved and unfinished, the Waiter choice is used, and the Chef choice is unused. |
@@ -160,12 +170,12 @@ Owns the restaurant's collections and totals. Coordinates operations that change
 | `Restaurant()` | Create two free tables, the base menu, empty customer/queue/order lists and zero totals. |
 | `void addArrival(Customer c)` | Add a new arrival to both the customer history and the back of the queue. Reject a duplicate ID. |
 | `ActionResult seat(int cId, int tableId)` | Require an existing queued customer and an existing free table. Remove the customer from the queue, assign the table and transition the customer to `SEATED`. Invalid requests change nothing. |
-| `ActionResult serve(int customerId, int turn)` | Require an existing seated customer occupying a table, their registered `READY` order, and no prior service. Validate first, then call `Order.markServed()`, `Customer.markServed(turn)`, and increment `servedCount` once. Return feedback; failure changes nothing. The full signature completes the shorthand used on meeting page 8. |
+| `ActionResult serve(int customerId, int turn)` | Require a positive turn, an existing seated customer occupying a table, their registered `READY` order, and no prior service. Validate first, then call `Order.markServed()`, `Customer.markServed(turn)`, and increment `servedCount` once. Return feedback; failure changes nothing. The full signature completes the shorthand used on meeting page 8. |
 | `Customer findCustomer(int id)` | Return the arrived customer with that ID, or `null`. |
 | `Order findOrder(int id)` | Return the order with that ID, or `null` if none was placed. |
 | `void registerOrder(Order order)` | Add the order to the registry; reject a duplicate ID. Coordinate with `Waiter.takeOrder()` so customer and registry share one order instance. |
-| `boolean recordPayment(Customer c, int turn)` | Require a restaurant customer occupying a table, status `READY_TO_PAY`, `readyToPayTurn < turn`, and their order in `SERVED`. Validate first; mark the order `PAID`, then the customer `PAID`, release the table, add the locked bill and recorded satisfaction, and increment paid count. Return true on success; otherwise false with no changes. |
-| `void removeAbandoned(Customer c)` | For an active unserved customer at zero satisfaction: remove them from the queue or release their table, call `c.abandon()`, and increment abandoned count once. Preserve the historical customer and order records. |
+| `boolean recordPayment(Customer c, int turn)` | Require a restaurant customer occupying a table, status `READY_TO_PAY`, `readyToPayTurn < turn`, and their registered order in `SERVED`. Validate first (including matching the registered order); mark the order `PAID`, then the customer `PAID`, release the table, add the locked bill and recorded satisfaction, and increment paid count. Return true on success; otherwise false with no changes. |
+| `void removeAbandoned(Customer c)` | For an active unserved customer at zero satisfaction: call `c.abandon()` first, and only on success remove them from the queue or release their table, and increment abandoned count once. Preserve the historical customer and order records. |
 | `Customer oldestEligiblePayer(int turn)` | Among `READY_TO_PAY` customers with `readyToPayTurn < turn`, return the earliest ready-to-pay turn, breaking ties by lowest customer ID. Return `null` if none qualify. |
 | `double averagePaidSatisfaction()` | Return floating-point `paidSatisfactionTotal / paidCount`, or `0.0` if paid count is zero. The snapshot represents the latter case as `null`. |
 | `List<Customer> getActiveCustomers()` | Return customers in `WAITING`, `SEATED`, `SERVED` or `READY_TO_PAY`; exclude `PAID` and `LEFT`. |
@@ -190,7 +200,7 @@ Owns one customer's identity, satisfaction, lifecycle and optional order. Stage 
 
 | Private attribute | Initial value and invariant |
 | --- | --- |
-| `int id` | Fixed ID; base arrivals use 1 through 6 |
+| `int id` | Fixed positive ID; base arrivals use 1 through 6 |
 | `int satisfaction` | 100, always within 0 through 100 |
 | `CustomerStatus status` | `WAITING` |
 | `int servedTurn` | `-1` until served; retains the service turn afterwards |
@@ -199,7 +209,7 @@ Owns one customer's identity, satisfaction, lifecycle and optional order. Stage 
 
 | Public operation | Preconditions and effects |
 | --- | --- |
-| `Customer(int id)` | Create a waiting customer with satisfaction 100, no order and both timing fields at -1. |
+| `Customer(int id)` | Reject nonpositive IDs with `IllegalArgumentException`. Create a waiting customer with satisfaction 100, no order and both timing fields at -1. The constructor is not restricted to IDs 1–6. |
 | `MenuItem chooseItem(List<MenuItem> menu)` | Given a nonempty menu, return `menu.get((id - 1) % menu.size())`. Called when taking the order; does not let the manager select food. |
 | `void seat()` | Require `WAITING`; transition to `SEATED`. Called as part of `Restaurant.seat()`. |
 | `void acceptOrder(Order order)` | Require `SEATED` and no existing order. Link the customer's new order; remain `SEATED`. The order ID must match the customer ID. |
@@ -228,7 +238,7 @@ Owns a fixed table ID and at most one occupant. Restaurant coordinates changes t
 
 | Public operation | Preconditions and effects |
 | --- | --- |
-| `Table(int id)` | Create a free table with a positive ID. |
+| `Table(int id)` | Reject nonpositive IDs with `IllegalArgumentException`; create a free table. Restaurant supplies the base IDs 1 and 2 and ensures uniqueness. |
 | `boolean isAvailable()` | Return whether occupant is `null`. |
 | `void assign(Customer c)` | Require a free table and a customer. Set the occupant; reject an occupied table. Restaurant coordinates the customer's `seat()` transition and queue removal. |
 | `void release()` | Clear an occupied table. Only Restaurant calls this during valid payment or abandonment. Throw `IllegalStateException` if already empty. |
@@ -389,7 +399,7 @@ The result carries no printing logic and exposes no mutators.
 | `int revenueCents` | Paid revenue |
 | `Double averagePaidSatisfaction` | Recorded paid-customer average, or `null` if nobody paid |
 | `List<Integer> waitingCustomerIds` | Waiting customer IDs in queue order |
-| `List<CustomerView> customers` | Customer summaries, including satisfaction and order progress |
+| `List<CustomerView> customers` | All arrived customers in arrival order, including `PAID` and `LEFT`, with satisfaction and order progress |
 | `List<TableView> tables` | Both tables and their occupants |
 | `boolean waiterAvailable` | Whether a Waiter choice can be accepted now |
 | `boolean chefAvailable` | Whether a Chef choice can be accepted now |
@@ -397,7 +407,7 @@ The result carries no printing logic and exposes no mutators.
 | `int servedCount` | Successfully served dishes |
 | `int abandonedCount` | Unhappy departures |
 
-**Factory:** `static GameSnapshot from(Restaurant r, TurnManager t)` reads state through getters, creates `CustomerView` and `TableView` records, and stores immutable copies of all lists. It stores no mutable entity references. Later game changes must not alter an existing snapshot. Record construction must also preserve list immutability.
+**Factory:** `static GameSnapshot from(Restaurant r, TurnManager t)` reads state through getters, creates `CustomerView` and `TableView` records, and stores immutable copies of all lists. It stores no mutable entity references and does not modify the entities it reads. Later game changes must not alter an existing snapshot. Record construction must also preserve list immutability.
 
 Availability is phase-specific: at the beginning of a turn the Chef is not yet assignable because the Waiter must choose first. The CLI should explain that sequence rather than describing the Chef's choice as already used.
 
@@ -436,7 +446,7 @@ This is display data, not a second Customer entity. Nullable order fields are ab
 4. The controller accepts one successful Waiter action or explicit wait, then records the Waiter choice. Failures retry without consuming it.
 5. The controller accepts one successful Chef action or explicit wait, then records the Chef choice. The Chef may prepare an order taken in step 4.
 6. `GameController.finishTurn()` resolves eating, payment, waiting penalties and abandonment, then advances or closes the game.
-7. Display the required end-of-turn results. After the final turn, call `isVictory()` and display the outcome. See Section 9 for the distinction between current turn and turns used.
+7. Display the required end-of-turn results using the saved turn number from step 3 as turns used, only after step 6 succeeds. After the final turn, call `isVictory()` and display the outcome.
 
 ### Timing example
 
@@ -482,15 +492,20 @@ These make implicit interactions explicit without adding classes or later-stage 
 - `Table.assign()` owns occupancy, while Restaurant coordinates the customer's `seat()` transition. This prevents the transition being applied twice.
 - Base arrival IDs follow arrival order, giving the deterministic Salad, Burger, Pasta cycle twice.
 
-### Decisions still to align before implementation
+### Resolved decisions
 
-| Topic | What is unspecified | Suggested resolution and owners |
-| --- | --- | --- |
-| Construction and launch | No entry-point class, package layout, Java version, or constructors for `RestaurantCLI` and `TurnManager` are specified. | M4/M5 agree on wiring one shared Restaurant, TurnManager, Waiter, Chef and Cashier. Choose a Java version supporting the proposed records and document the build/run command. Do not treat additional constructor signatures as already agreed. |
-| End-of-turn results and turns used | The brief requires end-of-turn totals. `finishTurn()` advances before a snapshot is returned; `GameSnapshot` contains `turn`, but no completed-turn count. | M4/M5 agree whether to add a completed-turn field or pass the just-completed turn number to a display method. The CLI must not label the next turn number as turns used. Keep `displayOutcome()` after final completion only. |
-| Invalid domain calls | Several methods say “reject” without specifying the exception type, null handling or repeated-abandonment behaviour. | M1/M2/M3/M4 agree on argument versus state exceptions. Suggested convention: `IllegalArgumentException` for invalid values and `IllegalStateException` for invalid transitions; player errors remain `ActionResult.fail(...)`. An already-departed customer must never increment the departure total again. |
-| Constructor ID validation | Base customer IDs are fixed at 1–6, but “invalid ID” is not precisely defined for constructors. | M1/M2 decide whether constructors accept any positive ID while base setup supplies 1–6, or enforce the base range. Do not silently give different meanings to customer and order IDs. |
-| Snapshot customer coverage | The snapshot says customer summaries but does not specify whether paid/departed customers appear. | M2/M5 agree on all historical customers versus active customers for the display. Recommended: snapshot all arrived customers, retain current-state fields, and let the CLI present them clearly. |
+| Topic | Agreed decision |
+| --- | --- |
+| Java version and launch | Java 17; `restaurantrush.Main` creates and connects shared instances. The CLI and TurnManager constructors above match the implemented wiring. |
+| Completed-turn reporting | CLI retains the turn being played and reports it as completed only after `finishTurn()` succeeds. The current implementation uses the saved start snapshot, avoiding an off-by-one error after advancement. |
+| Error handling | Invalid parameters use `IllegalArgumentException`; invalid lifecycle operations use `IllegalStateException`; invalid player actions return `ActionResult.fail(...)`. A repeated departure must not increment the departure total. |
+| Constructor IDs | Customer and Table require positive IDs. The base setup supplies customer IDs 1–6 and table IDs 1–2; these are setup limits, not constructor upper bounds. Order currently also validates positive IDs and must match its customer's ID. |
+| Historical display records | Preserve all arrived customers, including `PAID` and `LEFT`. GameSnapshot exposes them as immutable CustomerView records, with immutable list copies and no mutation of the source entities. |
+
+### Implementation discrepancies and remaining clarification
+
+- The error policy is resolved, but some current null checks still throw `NullPointerException`: RestaurantCLI uses `Objects.requireNonNull`, ActionResult rejects null messages the same way, and GameSnapshot's list copies reject null lists/elements. These are implementation discrepancies, not exceptions agreed to the policy; no code changes are made here.
+- Whether `Customer.acceptOrder()` must require a `PLACED` order remains unspecified. The current implementation checks seating, matching IDs and absence of an existing order, but does not restrict the incoming order's status.
 
 ### Member handoffs from the meeting
 
