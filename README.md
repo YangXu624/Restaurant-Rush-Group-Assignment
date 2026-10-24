@@ -89,7 +89,7 @@ The Chef acts after the Waiter's choice has been processed:
 ```
 
 ### Automated Unit & Integration Tests
-The repository includes a comprehensive standalone test suite (16 suites covering all units, contracts, and fixtures) without external build tool dependencies:
+The repository includes a comprehensive standalone test suite (17 suites covering all units, contracts, and fixtures) without external build tool dependencies:
 ```sh
 ./test.sh
 ```

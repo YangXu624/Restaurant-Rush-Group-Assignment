@@ -1,6 +1,6 @@
 # Stage 1 reproducible gameplay tests
 
-Verified on 23 October 2026 at commit `cbf498e9f93c0fc7164c960989beb26b901d0b76` for assignment Section 4.1. Existing tests and fixtures were reused without changes.
+Verified on 24 October 2026 at commit `ead385c` on `main` (incorporating PR #20) for assignment Section 4.1. Existing tests and fixtures were reused without changes.
 
 ## Reproduce the gameplay runs
 
