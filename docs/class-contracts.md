@@ -61,8 +61,8 @@ Reads commands, invokes `GameController`, and displays returned state and feedba
 | `RestaurantCLI(GameController controller, Scanner input, PrintStream output)` | Store the shared controller and supplied streams; the caller owns the streams. |
 | `void run()` | Start each turn through the controller, then display its snapshot. Read and retry Waiter commands until one succeeds, then read and retry Chef commands until one succeeds. After `finishTurn()` succeeds, display results using the saved turn number as the last completed turn. Repeat until the game finishes; stop cleanly if input ends. |
 | `void displayState(GameSnapshot snapshot)` | Show turn, revenue, average paid satisfaction, waiting queue, tables, customer satisfaction and status, order state and progress, and staff availability. Show `N/A` when average paid satisfaction is `null`. |
-| `String readWaiterChoice()` | Read `seat <customerId> <tableId>`, `order <customerId>`, `serve <customerId>`, or `wait`. |
-| `String readChefChoice()` | Read `cook <customerId>` or `wait`. |
+| `String readWaiterChoice()` | Prompt for and read `seat <customerId> <tableId>`, `order <customerId>`, `serve <customerId>`, or `wait`. Return a normalised valid command, or `null` at End of File. |
+| `String readChefChoice()` | Prompt for and read `cook <customerId>` or `wait`. Return a normalised valid command, or `null` at End of File. |
 | `void showFeedback(String message)` | Print an action's success or failure message. |
 | `void displayOutcome(boolean won)` | After turn 18 completes, display Victory or Defeat. Obtain the final snapshot from the controller and show served count, unhappy departures, paid count, revenue, average paid satisfaction and turns used. |
 
