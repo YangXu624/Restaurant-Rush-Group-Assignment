@@ -6,6 +6,9 @@ public class OrderTest {
         testConstructorValid();
         testConstructorInvalidIdThrows();
         testConstructorNullItemThrows();
+        testExplicitBillConstructor();
+        testExplicitBillValidation();
+        testExplicitBillRemainsLocked();
 
         testOneUnitPreparationLifecycle();
         testMultiUnitPreparationLifecycle();
@@ -47,6 +50,61 @@ public class OrderTest {
     private static void testConstructorNullItemThrows() {
         assertThrows(IllegalArgumentException.class, () -> new Order(1, null),
                 "Expected IllegalArgumentException for null item");
+    }
+
+    private static void testExplicitBillConstructor() {
+        MenuItem burger = new MenuItem("Burger", 1500, 1);
+        Order order = new Order(2, burger, 1350);
+        assertEqual(2, order.getId(), "Explicit bill preserves order ID");
+        assertTrue(order.getItem() == burger, "Explicit bill preserves selected menu item");
+        assertEqual(1350, order.getBillCents(), "Customer-specific bill is stored");
+        assertEqual(1500, burger.getPriceCents(), "Menu price is unchanged");
+        assertEqual(OrderStatus.PLACED, order.getStatus(), "Explicit bill starts PLACED");
+        assertEqual(1, order.getRemainingUnits(), "Preparation still comes from the selected item");
+        assertTrue(order.canPrepare(), "Explicit bill order is initially preparable");
+        assertEqual(0, new Order(2, burger, 0).getBillCents(), "Zero bill is valid");
+        assertEqual(Integer.MAX_VALUE, new Order(2, burger, Integer.MAX_VALUE).getBillCents(),
+                "Nonnegative int bill is retained without overflow");
+        assertEqual(1500, new Order(2, burger).getBillCents(), "Original constructor still uses full price");
+    }
+
+    private static void testExplicitBillValidation() {
+        MenuItem item = new MenuItem("Burger", 1500, 1);
+        assertThrows(IllegalArgumentException.class, () -> new Order(0, item, 1350), "Explicit bill with zero ID");
+        assertThrows(IllegalArgumentException.class, () -> new Order(-1, item, 1350), "Explicit bill with negative ID");
+        assertThrows(IllegalArgumentException.class, () -> new Order(2, null, 1350), "Explicit bill with null item");
+        assertThrows(IllegalArgumentException.class, () -> new Order(2, item, -1), "Negative explicit bill");
+        MenuItem invalidPreparation = new MenuItem("Special", 100, 1) {
+            @Override
+            public int getPreparationUnits() {
+                return 0;
+            }
+        };
+        assertThrows(IllegalArgumentException.class, () -> new Order(2, invalidPreparation),
+                "Original constructor still validates preparation units");
+        assertThrows(IllegalArgumentException.class, () -> new Order(2, invalidPreparation, 90),
+                "Explicit bill constructor validates preparation units");
+    }
+
+    private static void testExplicitBillRemainsLocked() {
+        MenuItem pasta = new MenuItem("Pasta", 1800, 2);
+        Order order = new Order(3, pasta, 1620);
+        order.prepareOneUnit();
+        assertEqual(1620, order.getBillCents(), "Bill stays locked while preparing");
+        order.prepareOneUnit();
+        assertEqual(1620, order.getBillCents(), "Bill stays locked when READY");
+        order.markServed();
+        assertEqual(1620, order.getBillCents(), "Bill stays locked when SERVED");
+        order.markPaid();
+        assertEqual(1620, order.getBillCents(), "Bill stays locked when PAID");
+        for (int units = 0; units <= 2; units++) {
+            Order cancelled = new Order(3, pasta, 1620);
+            for (int i = 0; i < units; i++) {
+                cancelled.prepareOneUnit();
+            }
+            cancelled.cancel();
+            assertEqual(1620, cancelled.getBillCents(), "Cancellation preserves the historical bill");
+        }
     }
 
     private static void testOneUnitPreparationLifecycle() {

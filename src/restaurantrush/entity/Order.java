@@ -11,7 +11,13 @@ public class Order {
     private int remainingUnits;
     private final int billCents;
 
+    /** Creates a full-price order, preserving the original constructor contract. */
     public Order(int id, MenuItem item) {
+        this(id, item, item == null ? 0 : item.getPriceCents());
+    }
+
+    /** Locks a nonnegative customer-specific bill when the order is placed. */
+    public Order(int id, MenuItem item, int billCents) {
         if (id <= 0) {
             throw new IllegalArgumentException("Order ID must be positive: " + id);
         }
@@ -21,11 +27,14 @@ public class Order {
         if (item.getPreparationUnits() <= 0) {
             throw new IllegalArgumentException("Order item preparation units must be positive");
         }
+        if (billCents < 0) {
+            throw new IllegalArgumentException("Order bill cannot be negative");
+        }
         this.id = id;
         this.item = item;
         this.status = OrderStatus.PLACED;
         this.remainingUnits = item.getPreparationUnits();
-        this.billCents = item.getPriceCents();
+        this.billCents = billCents;
     }
 
     public boolean canPrepare() {
