@@ -33,6 +33,19 @@ public class Customer {
         return menu.get((id - 1) % menu.size());
     }
 
+    /** Returns the regular customer's full-price bill without changing state. */
+    public int calculateBillCents(MenuItem item) {
+        if (item == null) {
+            throw new IllegalArgumentException("Menu item cannot be null");
+        }
+        return item.getPriceCents();
+    }
+
+    /** Returns a display label without exposing mutable customer state. */
+    public String getCustomerType() {
+        return "Regular";
+    }
+
     public void seat() {
         if (status != CustomerStatus.WAITING) {
             throw new IllegalStateException("Customer " + id + " cannot be seated with status " + status);
@@ -87,8 +100,13 @@ public class Customer {
 
     public void applyWaitingPenalty() {
         if (status == CustomerStatus.WAITING || status == CustomerStatus.SEATED) {
-            satisfaction = Math.max(0, satisfaction - 8);
+            satisfaction = Math.max(0, satisfaction - waitingPenaltyPerTurn());
         }
+    }
+
+    /** Subclasses vary the amount while sharing the lifecycle guard and zero clamp. */
+    protected int waitingPenaltyPerTurn() {
+        return 8;
     }
 
     public void markPaid() {
