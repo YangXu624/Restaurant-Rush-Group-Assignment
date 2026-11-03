@@ -25,5 +25,5 @@ jobs:
         run: |
           for f in victory defeat abandonment invalid-input; do
             echo "== $f =="
-            sh run.sh < tests/fixtures/m5/$f.txt
+            sh run.sh < tests/fixtures/stage2/$f.txt
           done

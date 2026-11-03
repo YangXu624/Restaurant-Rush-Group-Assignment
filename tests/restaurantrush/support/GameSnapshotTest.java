@@ -27,7 +27,7 @@ public class GameSnapshotTest {
     private static void testDirectConstructionCopiesLists() {
         List<Integer> waiting = new ArrayList<>(List.of(1));
         List<CustomerView> customers = new ArrayList<>(List.of(
-                new CustomerView(1, 100, CustomerStatus.WAITING, null, null, null, null)));
+                new CustomerView(1, 100, CustomerStatus.WAITING, null, null, null, null, "Regular", null)));
         List<TableView> tables = new ArrayList<>(List.of(new TableView(1, null)));
         GameSnapshot snapshot = snapshotWith(waiting, customers, tables);
         waiting.clear();
@@ -69,7 +69,7 @@ public class GameSnapshotTest {
         GameSnapshot start = GameSnapshot.from(restaurant, manager);
         availability(start, true, false);
         equal(List.of(1), start.waitingCustomerIds(), "Arrival is visible");
-        equal(new CustomerView(1, 100, CustomerStatus.WAITING, null, null, null, null),
+        equal(new CustomerView(1, 100, CustomerStatus.WAITING, null, null, null, null, "Regular", null),
                 start.customers().get(0), "Unordered customer has absent order and table fields");
         equal(start, GameSnapshot.from(restaurant, manager), "Repeated capture does not change game state");
         manager.recordWaiterTask();
@@ -112,7 +112,7 @@ public class GameSnapshotTest {
         GameSnapshot preparing = GameSnapshot.from(restaurant, manager);
         equal(List.of(2, 1), preparing.waitingCustomerIds(), "Preserve queue order rather than sorting IDs");
         equal(List.of(3, 2, 1), preparing.customers().stream().map(CustomerView::id).toList(), "Preserve arrival order");
-        equal(new CustomerView(3, 100, CustomerStatus.SEATED, OrderStatus.PREPARING, "Pasta", 1, 2),
+        equal(new CustomerView(3, 100, CustomerStatus.SEATED, OrderStatus.PREPARING, "Pasta", 1, 2, "Regular", 1800),
                 preparing.customers().get(0), "Map dish, progress and actual table");
         equal(List.of(new TableView(1, null), new TableView(2, 3)), preparing.tables(), "Map occupied and free tables");
         assertUnmodifiable(preparing);
@@ -130,9 +130,9 @@ public class GameSnapshotTest {
         }
         restaurant.removeAbandoned(restaurant.findCustomer(2));
         GameSnapshot historical = GameSnapshot.from(restaurant, manager);
-        equal(new CustomerView(3, 100, CustomerStatus.PAID, OrderStatus.PAID, "Pasta", 0, null),
+        equal(new CustomerView(3, 100, CustomerStatus.PAID, OrderStatus.PAID, "Pasta", 0, null, "Regular", 1800),
                 historical.customers().get(0), "Retain paid order but clear table");
-        equal(new CustomerView(2, 0, CustomerStatus.LEFT, OrderStatus.CANCELLED, "Burger", 1, null),
+        equal(new CustomerView(2, 0, CustomerStatus.LEFT, OrderStatus.CANCELLED, "Burger", 1, null, "Regular", 1500),
                 historical.customers().get(1), "Retain cancelled order but clear table");
         equal(List.of(1), historical.waitingCustomerIds(), "Only queued customer remains");
         equal(List.of(new TableView(1, null), new TableView(2, null)), historical.tables(), "Payment and departure free tables");
@@ -141,7 +141,7 @@ public class GameSnapshotTest {
         equal(1, historical.abandonedCount(), "Map departure count");
         equal(1800, historical.revenueCents(), "Only paid bill enters revenue");
         equal(100.0, historical.averagePaidSatisfaction(), "Map paid satisfaction");
-        equal(new CustomerView(3, 100, CustomerStatus.SEATED, OrderStatus.PREPARING, "Pasta", 1, 2),
+        equal(new CustomerView(3, 100, CustomerStatus.SEATED, OrderStatus.PREPARING, "Pasta", 1, 2, "Regular", 1800),
                 preparing.customers().get(0), "Old order and customer data remain detached");
         equal(List.of(2, 1), preparing.waitingCustomerIds(), "Old queue remains detached");
         equal(new TableView(2, 3), preparing.tables().get(1), "Old occupancy remains detached");

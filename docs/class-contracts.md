@@ -1,8 +1,17 @@
-# Class contracts
+# Stage 2 class contracts
 
-This document records the team's **Stage 1** design from `18oct_meeting.pdf` (18 October meeting, pages 1–18), checked against `SC2002_Restaurant_Rush_Group_Assignment.docx`. It defines the responsibilities and shared interfaces that members can implement against. It includes the decisions confirmed during subsequent group meetings and remains the main implementation reference.
+Stage 2 is the default game. This integration follows the supplied Stage 2 plan and the implementation; the original assignment and separate implementation guide were unavailable and were not independently verified. Historical [Stage 1 contracts](stage1-class-contracts.md), diagrams and fixtures remain separate.
 
-The meeting's class names and ownership are preserved; agreed wiring and display details are included below. Java signatures below use normal constructor syntax (no return type). Details inferred to make the contracts consistent are identified under [Clarifications and open decisions](#9-clarifications-and-open-decisions). Stage 2 and Stage 3 classes are outside this meeting design and must not be added to the Stage 1 runnable version.
+## Stage 2 extensions
+
+- TurnManager constructs customer 2 on turn 4 as VIPCustomer and customer 5 on turn 13 as CriticCustomer. IDs 1, 3, 4 and 6 remain regular Customer instances. There is no stage selector.
+- Customer exposes `public int calculateBillCents(MenuItem item)`, `public String getCustomerType()`, and `protected int waitingPenaltyPerTurn()` in addition to `chooseItem(List<MenuItem>)`. The inherited penalty method owns status eligibility and clamping.
+- Regular: penalty 8, cyclic menu choice, full price. VIP: penalty 5, cyclic menu choice, 10% discount rounded half up using integer cents. Critic: penalty 12, highest-priced item (first maximum in menu order), full price.
+- Waiter asks the Customer reference to select and price its dish. `Order(int id, MenuItem item, int billCents)` validates and locks the bill before linking or registration. The two-argument constructor remains full-price compatible. Neither Cashier nor display code recalculates the bill.
+- Subtype selection happens only at arrival construction; behavior uses runtime method dispatch, without instanceof chains or label-based decisions.
+- CustomerView appends `String customerType` and `Integer billCents` after `tableId`. Type must be nonblank; order status, name, remaining units and bill must be all absent or all present. A present bill must be nonnegative; zero is a valid free bill, not absence.
+- GameSnapshot reads the type from Customer and locked bill from Order. CLI prints type and bill (`none` before ordering, dollars with two decimal places otherwise). Historical paid/cancelled order bills remain visible.
+- Existing turn sequencing, 18-turn completion, payment delay and victory thresholds remain unchanged. Host, combos and Happy Hour are outside this integration.
 
 ## 1. Ownership and responsibilities
 
@@ -18,14 +27,14 @@ The meeting's class names and ownership are preserved; agreed wiring and display
 
 - Target Java 17. `Main.java` initializes and connects the game components using shared instances, then launches the CLI.
 - All entity and control attributes are private. Public operations are listed below. Record components expose their standard Java accessors, such as `snapshot.turn()`.
-- Money is stored as integer cents and displayed as dollars with two decimal places. Stage 1 bills are locked to the selected menu item's price when the order is created.
+- Money is stored as integer cents and displayed as dollars with two decimal places. Bills are locked to the customer-calculated price when the order is created.
 - Player-requested actions return `ActionResult`. Failure explains the problem, leaves game state unchanged and does not consume the staff choice. An explicit `wait` succeeds and consumes that choice.
 - Use `IllegalArgumentException` for invalid parameters, `IllegalStateException` for invalid lifecycle operations, and `ActionResult.fail(...)` for invalid player actions. Existing boolean-returning operations retain their documented failure results. Current implementation discrepancies are noted in Section 9.
 - No domain, staff or control object reads input or prints output. `RestaurantCLI` handles interaction; `ActionResult` carries feedback and `GameSnapshot` carries display state.
 - A customer is either queued or seated, never both. A table holds at most one customer, and a customer occupies at most one table. A table remains occupied through eating and waiting for payment.
 - Each customer has at most one order. Its ID equals the customer's ID. The customer's order reference and the restaurant's order registry refer to the same object.
 - Paid and departed customers and their orders remain in the historical lists. `PAID` and `LEFT` customers are excluded from active customers and the waiting queue, but included in immutable display views. Creating views must not modify the underlying entities.
-- Satisfaction stays in `[0, 100]`. Only `WAITING` and `SEATED` customers lose satisfaction, at 8 points per turn in Stage 1, clamped to zero.
+- Satisfaction stays in `[0, 100]`. Only `WAITING` and `SEATED` customers lose satisfaction, at 8/5/12 points per turn for Regular/VIP/Critic, clamped to zero.
 - Revenue includes only successful payments, once each. Served count, abandoned count, paid count and paid satisfaction total are updated once per corresponding event.
 - Collection getters return read-only copies. These copies still contain domain entities; the CLI must receive immutable view records instead of those mutable references.
 - Staff availability and action order belong to `TurnManager`. Order preparation validity belongs to `Order`. Cross-object seating, serving, payment and abandonment belong to `Restaurant`.
@@ -36,10 +45,10 @@ The meeting's class names and ownership are preserved; agreed wiring and display
 | --- | --- |
 | Turns | Exactly 18; no early victory or defeat |
 | Tables | Two, IDs `1` and `2` |
-| Arrivals | One customer at the start of turns `1, 4, 7, 10, 13, 16`; IDs `1` through `6` in arrival order |
+| Arrivals | One customer at the start of turns `1, 4, 7, 10, 13, 16`; IDs `1` through `6` in arrival order; ID 2 VIP, ID 5 Critic |
 | Staff | One Waiter choice, then one Chef choice per turn; at most one automatic Cashier payment |
 | Menu order | `Salad` (900 cents, 1 unit), `Burger` (1500 cents, 1 unit), `Pasta` (1800 cents, 2 units) |
-| Food selection | `menu.get((id - 1) % menu.size())`, when ordering; the manager never chooses the dish |
+| Food selection | Regular/VIP use `menu.get((id - 1) % menu.size())`; Critic chooses the first highest-priced item; the manager never chooses the dish |
 | Victory | Game finished AND paid count ≥ 4 AND revenue ≥ 4500 cents AND average paid satisfaction ≥ 60 |
 
 ## 3. Boundary contract
@@ -139,7 +148,7 @@ Automatic events run in this order:
 
 1. Call `finishEating(currentTurn)` for eligible customers. Only customers served on an earlier turn become `READY_TO_PAY`; record the current turn as their ready-to-pay turn.
 2. Call `cashier.collectOne(r, currentTurn)`. Only a customer whose ready-to-pay turn is earlier than the current turn can pay.
-3. Apply the waiting penalty to active customers. Only `WAITING` and `SEATED` customers lose satisfaction.
+3. Apply the waiting penalty to active customers. Only `WAITING` and `SEATED` customers lose satisfaction using their polymorphic penalty.
 4. Ask `Restaurant` to remove unserved customers whose satisfaction reached zero.
 
 The Waiter acts before the Chef. Therefore an order taken this turn can be prepared this turn, but an order completed by the Chef cannot be served until a later turn. No extra preparation or serving phase repeats the already-executed staff action.
@@ -196,11 +205,11 @@ Owns the restaurant's collections and totals. Coordinates operations that change
 
 **Owner:** M1 · **Kind:** Entity
 
-Owns one customer's identity, satisfaction, lifecycle and optional order. Stage 1 customers are Regular customers represented by this class.
+Owns one customer's identity, satisfaction, lifecycle and optional order. Regular customers use this class; VIPCustomer and CriticCustomer extend its behavior.
 
 | Private attribute | Initial value and invariant |
 | --- | --- |
-| `int id` | Fixed positive ID; base arrivals use 1 through 6 |
+| `int id` | Fixed positive ID; scheduled arrivals use 1 through 6 |
 | `int satisfaction` | 100, always within 0 through 100 |
 | `CustomerStatus status` | `WAITING` |
 | `int servedTurn` | `-1` until served; retains the service turn afterwards |
@@ -215,7 +224,7 @@ Owns one customer's identity, satisfaction, lifecycle and optional order. Stage 
 | `void acceptOrder(Order order)` | Require `SEATED` and no existing order. Link the customer's new order; remain `SEATED`. The order ID must match the customer ID. |
 | `void markServed(int turn)` | Require `SEATED`, no previous service and an associated order already marked `SERVED`. Transition to `SERVED` and record `servedTurn`. Do not update totals or release a table. |
 | `void finishEating(int turn)` | If status is `SERVED` and `servedTurn < turn`, transition to `READY_TO_PAY` and set `readyToPayTurn = turn`. Otherwise do nothing; do not reset an existing ready-to-pay timestamp. |
-| `void applyWaitingPenalty()` | If `WAITING` or `SEATED`, subtract 8 with a floor of zero. Other states are unchanged. |
+| `void applyWaitingPenalty()` | If `WAITING` or `SEATED`, subtract the overridden waiting penalty with a floor of zero. Other states are unchanged. |
 | `void markPaid()` | Require `READY_TO_PAY` and an associated order already `PAID`; transition to `PAID`. Restaurant coordinates table release and statistics. |
 | `void abandon()` | Transition `WAITING` or `SEATED` to `LEFT` and cancel any unserved order. Restaurant invokes this for a customer at zero satisfaction and handles queue/table cleanup. |
 | `int getId()` | Return the fixed ID. |
@@ -257,10 +266,11 @@ Owns the selected item, preparation progress, locked bill and food lifecycle. Pr
 | `MenuItem item` | Chosen dish, fixed on creation |
 | `OrderStatus status` | Initially `PLACED` |
 | `int remainingUnits` | Initially the item's preparation units; never negative |
-| `int billCents` | Initially the item's price; locked for the lifetime of the order |
+| `int billCents` | Customer-calculated price (or item price with the two-argument constructor); locked for the lifetime of the order |
 
 | Public operation | Preconditions and effects |
 | --- | --- |
+| `Order(int id, MenuItem item, int billCents)` | Create a PLACED order with an explicit nonnegative locked bill; validate before linking. |
 | `Order(int id, MenuItem item)` | Create a `PLACED` order with the item's units and price. Reject invalid IDs, null items and nonpositive preparation units. |
 | `boolean canPrepare()` | True only for `PLACED` or `PREPARING` with positive remaining units. No mutation. |
 | `void prepareOneUnit()` | Call `canPrepare()` and throw `IllegalStateException` if false. Otherwise subtract exactly one unit; become `READY` at zero, else `PREPARING`. |
@@ -304,7 +314,7 @@ Performs seating, ordering or serving. It has no persistent attributes or indepe
 | Public operation | Preconditions and effects |
 | --- | --- |
 | `ActionResult seat(Restaurant r, int cId, int tableId)` | Delegate to `r.seat(cId, tableId)` and return its result. |
-| `ActionResult takeOrder(Restaurant r, int customerId)` | Require an existing `SEATED` customer with no order. Ask `customer.chooseItem(r.getMenu())`, create the order using the customer's ID, link it through `acceptOrder()` and register it with Restaurant. Return success naming the dish. Invalid requests change nothing. |
+| `ActionResult takeOrder(Restaurant r, int customerId)` | Require an existing `SEATED` customer with no order. Ask `customer.chooseItem(r.getMenu())`, ask `customer.calculateBillCents(item)` and create the order with the customer's ID, item and locked bill, link it through `acceptOrder()` and register it with Restaurant. Return success naming the dish. Invalid requests change nothing. |
 | `ActionResult serve(Restaurant r, int customerId, int turn)` | Delegate to `r.serve(customerId, turn)` and return its result. Do not duplicate its checks, mutate Customer or Order directly, or update served count. |
 
 Order creation must preserve the shared-order invariant. Check the customer and registry before linking/registering so a rejected request cannot leave a partially registered order. The meeting assigns this orchestration to Waiter; a future redesign must be agreed rather than silently moved to another class.
@@ -424,6 +434,8 @@ Availability is phase-specific: at the beginning of a turn the Chef is not yet a
 | `String itemName` | Chosen dish, or `null` before ordering |
 | `Integer remainingUnits` | Units left, or `null` before ordering |
 | `Integer tableId` | Current table ID, or `null` when not occupying a table |
+| `String customerType` | Nonblank polymorphic customer label |
+| `Integer billCents` | Locked order bill, or `null` before ordering |
 
 This is display data, not a second Customer entity. Nullable order fields are absent together before ordering. Paid and departed customers have no table ID; historical order information can remain present.
 
@@ -475,7 +487,7 @@ This is a timing example, not a replacement for deterministic food selection: in
 - Paid satisfaction averages use floating-point division and values recorded at payment. Before any payment, the CLI shows `N/A`.
 - The game always completes 18 turns; the turn-16 arrival cannot pay by the end. Victory requires all three targets simultaneously.
 - Snapshots and their lists cannot be mutated, and remain unchanged when later turns run.
-- Stage 1 must have reproducible victory and defeat runs recorded separately in test notes. These contracts specify expected behaviour; they do not constitute executed tests.
+- Stage 2 must have reproducible victory and defeat runs recorded separately in test notes. These contracts specify expected behaviour; they do not constitute executed tests.
 
 ## 9. Clarifications and open decisions
 
@@ -490,7 +502,7 @@ These make implicit interactions explicit without adding classes or later-stage 
 - `remainingUnits == 0` indicates completed preparation, while `isReady()` tests the current state. Zero units alone does not permit serving a cancelled or already-served order.
 - Order linking uses matching IDs and the same object in Customer and Restaurant. Validation precedes mutations to satisfy the brief's failure-without-state-change requirement.
 - `Table.assign()` owns occupancy, while Restaurant coordinates the customer's `seat()` transition. This prevents the transition being applied twice.
-- Base arrival IDs follow arrival order, giving the deterministic Salad, Burger, Pasta cycle twice.
+- Base arrival IDs follow arrival order, giving the cyclic regular/VIP selection, with Critic customer 5 selecting Pasta.
 
 ### Resolved decisions
 
@@ -517,4 +529,4 @@ These make implicit interactions explicit without adding classes or later-stage 
 | M3 and M4 | Staff limits, Waiter-before-Chef sequencing and automatic Cashier timing |
 | M4 and M5 | Command/result exchange, snapshots, lifecycle calls and end-of-turn reporting |
 
-Future Stage 2 and Stage 3 work must extend this design deliberately and document changed contracts. In particular, the brief requires customer-dispatched behaviour, VIP/Critic types, Host seating, ComboMeal composition and Happy Hour pricing/timing, but this meeting does not yet define their class APIs.
+Customer dispatch and VIP/Critic behavior are implemented as described above. Host seating, ComboMeal and Happy Hour are not part of this integration; their requirements and APIs need separate confirmation.

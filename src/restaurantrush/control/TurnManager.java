@@ -1,11 +1,13 @@
 package restaurantrush.control;
 
+import restaurantrush.entity.CriticCustomer;
 import restaurantrush.entity.Customer;
 import restaurantrush.entity.CustomerStatus;
 import restaurantrush.entity.Restaurant;
+import restaurantrush.entity.VIPCustomer;
 import restaurantrush.staff.Cashier;
 
-/** Owns Stage 1 turn sequencing and automatic events. Owner: M4: Nickolas. */
+/** Owns Stage 2 turn sequencing and automatic events. Owner: M4: Nickolas. */
 public class TurnManager {
     private static final int LAST_TURN = 18;
     private static final int ARRIVAL_INTERVAL = 3;
@@ -34,7 +36,13 @@ public class TurnManager {
         }
         // Add the arrival before changing lifecycle flags, in case validation fails.
         if ((currentTurn - 1) % ARRIVAL_INTERVAL == 0) {
-            r.addArrival(new Customer((currentTurn - 1) / ARRIVAL_INTERVAL + 1));
+            int id = (currentTurn - 1) / ARRIVAL_INTERVAL + 1;
+            Customer arrival = switch (id) {
+                case 2 -> new VIPCustomer(id);
+                case 5 -> new CriticCustomer(id);
+                default -> new Customer(id);
+            };
+            r.addArrival(arrival);
         }
         waiterTaskUsed = false;
         chefTaskUsed = false;

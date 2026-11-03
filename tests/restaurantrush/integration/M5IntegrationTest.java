@@ -23,11 +23,11 @@ import restaurantrush.support.TableView;
 
 /** File-backed CLI integration evidence. Does not claim to test the production Main. */
 public class M5IntegrationTest {
-    private static final Path FIXTURES = Path.of("tests", "fixtures", "m5");
+    private static final Path FIXTURES = Path.of("tests", "fixtures", "stage2");
 
     public static void main(String[] args) throws IOException {
         if (args.length == 1 && args[0].equals("--replay")) {
-            // Test-only replay while production launch wiring is owned by M4.
+            // Test-only replay; MainTest separately verifies production launcher wiring.
             new Game(new Scanner(System.in), System.out).cli.run();
             return;
         }
@@ -62,25 +62,27 @@ public class M5IntegrationTest {
         equal(5, state.paidCount(), "Victory paid count");
         equal(5, state.servedCount(), "Victory served count");
         equal(0, state.abandonedCount(), "Victory departures");
-        equal(6600, state.revenueCents(), "Five paid menu bills");
-        equal(79.2, state.averagePaidSatisfaction(), "Unrounded recorded average");
+        equal(6750, state.revenueCents(), "Five paid menu bills");
+        equal(74.8, state.averagePaidSatisfaction(), "Unrounded recorded average");
         equal(List.of(), state.waitingCustomerIds(), "All customers seated");
         equal(List.of(new TableView(1, null), new TableView(2, 6)), state.tables(), "Final customer retains table");
         equal(List.of(1, 2, 3, 4, 5, 6), state.customers().stream().map(CustomerView::id).toList(), "Six arrivals in order");
-        equal(new CustomerView(6, 76, CustomerStatus.SEATED, OrderStatus.PREPARING, "Pasta", 1, 2),
+        equal(new CustomerView(6, 76, CustomerStatus.SEATED, null, null, null, 2, "Regular", null),
                 state.customers().get(5), "Turn-16 arrival cannot complete payment");
         for (int i = 0; i < 5; i++) {
             equal(CustomerStatus.PAID, state.customers().get(i).status(), "Earlier customer paid");
             equal(null, state.customers().get(i).tableId(), "Paid customer releases table");
         }
         String text = result.text();
+        contains(text, "Type: VIP | Locked bill: $13.50");
+        contains(text, "Type: Critic | Locked bill: $18.00");
         contains(turnDisplay(text, 9), "Customer 3 | satisfaction 84 | SEATED | table 1 | order: Pasta | PREPARING | 1 unit(s) remaining");
         contains(turnDisplay(text, 10), "Customer 3 | satisfaction 76 | SEATED | table 1 | order: Pasta | READY | 0 unit(s) remaining");
         contains(turnDisplay(text, 11), "Customer 3 | satisfaction 76 | SERVED");
         contains(turnDisplay(text, 12), "Customer 3 | satisfaction 76 | READY_TO_PAY");
-        contains(text, "End of turn 11\nRevenue: $24.00");
-        contains(text, "End of turn 12\nRevenue: $42.00");
-        contains(text, "Victory\nRevenue: $66.00\nAverage paid satisfaction: 79.20");
+        contains(text, "End of turn 11\nRevenue: $22.50");
+        contains(text, "End of turn 12\nRevenue: $40.50");
+        contains(text, "Victory\nRevenue: $67.50\nAverage paid satisfaction: 74.80");
     }
 
     private static void testDefeat(Result result) {
@@ -89,8 +91,8 @@ public class M5IntegrationTest {
         equal(0, result.state().servedCount(), "No service while waiting");
         equal(0, result.state().revenueCents(), "No unpaid revenue");
         equal(null, result.state().averagePaidSatisfaction(), "No paid average");
-        equal(2, result.state().abandonedCount(), "First two customers reach zero by turn 18");
-        equal(List.of(3, 4, 5, 6), result.state().waitingCustomerIds(), "Only active arrivals remain queued");
+        equal(1, result.state().abandonedCount(), "Only regular customer 1 reaches zero by turn 18");
+        equal(List.of(2, 3, 4, 5, 6), result.state().waitingCustomerIds(), "Only active arrivals remain queued");
         equal(List.of(new TableView(1, null), new TableView(2, null)), result.state().tables(), "Unused tables free");
         equal(CustomerStatus.LEFT, result.state().customers().get(0).status(), "Departed customer retained");
         contains(result.text(), "Defeat\nRevenue: $0.00\nAverage paid satisfaction: N/A");
@@ -110,8 +112,8 @@ public class M5IntegrationTest {
     private static void testAbandonment(Result result) {
         complete(result, false);
         equal(0, result.state().revenueCents(), "Abandoned order creates no revenue");
-        equal(2, result.state().abandonedCount(), "Departures counted once");
-        equal(new CustomerView(1, 0, CustomerStatus.LEFT, OrderStatus.CANCELLED, "Salad", 1, null),
+        equal(1, result.state().abandonedCount(), "Departures counted once");
+        equal(new CustomerView(1, 0, CustomerStatus.LEFT, OrderStatus.CANCELLED, "Salad", 1, null, "Regular", 900),
                 result.state().customers().get(0), "Abandonment cancels unfinished order and clears table");
         equal(List.of(new TableView(1, null), new TableView(2, null)), result.state().tables(), "Abandonment frees occupied table");
         contains(turnDisplay(result.text(), 14), "Table 1: free");
