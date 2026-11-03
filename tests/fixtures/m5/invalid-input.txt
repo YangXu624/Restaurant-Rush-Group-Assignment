@@ -33,15 +33,15 @@ seat 4 2
 wait
 order 4
 cook 4
-serve 4
-wait
 seat 5 1
 wait
 order 5
 cook 5
+serve 4
+cook 5
 serve 5
+wait
+wait
 wait
 seat 6 2
 wait
-order 6
-cook 6

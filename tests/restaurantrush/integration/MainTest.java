@@ -36,7 +36,7 @@ public class MainTest {
         Path java = Path.of(System.getProperty("java.home"), "bin", windows ? "java.exe" : "java");
         // Use only production classes: test helpers must not be needed to play the game.
         Path classes = Path.of(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-        Path input = Path.of("tests", "fixtures", "stage2", fixture).toAbsolutePath();
+        Path input = Path.of("tests", "fixtures", "m5", fixture).toAbsolutePath();
         Path transcript = Files.createTempFile("m5-main-", ".log");
         Process process = null;
         try {

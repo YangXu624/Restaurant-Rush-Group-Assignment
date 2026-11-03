@@ -23,7 +23,7 @@ import restaurantrush.support.TableView;
 
 /** File-backed CLI integration evidence. Does not claim to test the production Main. */
 public class M5IntegrationTest {
-    private static final Path FIXTURES = Path.of("tests", "fixtures", "stage2");
+    private static final Path FIXTURES = Path.of("tests", "fixtures", "m5");
 
     public static void main(String[] args) throws IOException {
         if (args.length == 1 && args[0].equals("--replay")) {

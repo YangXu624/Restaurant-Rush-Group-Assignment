@@ -1,44 +1,61 @@
-# Stage 2 verification — 3 November 2026
+# Stage 1 reproducible gameplay tests
 
-Integration based on `c125c3ef024d54de6dad863d0744591ccf237181`, with local uncommitted changes. No new commit or tag was created. Original assignment and separate Stage 2 handoff guide were unavailable; verification uses the supplied integration plan and real implementation.
+Verified on 24 October 2026 at commit `ead385c` on `main` (incorporating PR #20) for assignment Section 4.1. Existing tests and fixtures were reused without changes.
 
-## Exact victory fixture
+## Reproduce the gameplay runs
 
-`tests/fixtures/stage2/victory.txt` is replayed through the real CLI and Main, without doubles. The first five customers pay:
-
-| ID/type | Arrival | Seat | Order | Cook turns | Serve | Ready | Pay | Paid satisfaction | Bill cents |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 Regular | 1 | 1 | 2 | 2 | 3 | 4 | 5 | 84 | 900 |
-| 2 VIP | 4 | 4 | 5 | 5 | 6 | 7 | 8 | 90 | 1350 |
-| 3 Regular | 7 | 7 | 8 | 8, 9 | 10 | 11 | 12 | 76 | 1800 |
-| 4 Regular | 10 | 11 | 12 | 12 | 15 | 16 | 17 | 60 | 900 |
-| 5 Critic | 13 | 13 | 14 | 14, 15 | 16 | 17 | 18 | 64 | 1800 |
-
-Penalties apply from arrival through the turn before service. Satisfaction total is 374; 374/5 = 74.80. Bills sum to 6750 cents. This independently derived schedule matches the candidate result: **Victory, five paid, $67.50, 74.80 average, five served, zero departures, 18 turns**. Customer 6 arrives on turn 16 and seats on turn 18 with satisfaction 76 and no order/bill. Both tables were occupied at the start of turn 17; payment releases customer 4's table only at its end.
-
-## Other fixtures
-
-- `defeat.txt`: all wait. Customer 1 reaches zero on turn 13. VIP customer 2 has 25 satisfaction at completion; Critic customer 5 has 28. Result: **Defeat, zero paid/served, $0.00, N/A average, one departure, 18 turns**.
-- `invalid-input.txt`: same final state and totals as victory despite retries.
-- `abandonment.txt`: customer 1's unfinished order is cancelled, table freed, one departure, zero revenue.
-- `eof-waiter.txt` / `eof-chef.txt`: unfinished turn 1; no automatic events, completion summary or final outcome.
-
-## Commands and coverage
+Prerequisites: JDK 17 or newer with `javac` and `java` on PATH, and a POSIX shell (macOS, Linux or WSL). Run from the repository root. Verification used macOS and Temurin JDK 21.0.12; compilation targets Java 17 using `--release 17`. Execution on a Java 17 runtime was not separately verified.
 
 ```sh
-./compile.sh
-./test.sh restaurantrush.integration.Stage2IntegrationTest
-./test.sh
-for f in victory defeat abandonment invalid-input eof-waiter eof-chef; do
-  ./run.sh < tests/fixtures/stage2/$f.txt
-done
-git diff --check
+./run.sh < tests/fixtures/m5/victory.txt
+./run.sh < tests/fixtures/m5/defeat.txt
 ```
 
-The focused Stage 2 test checks scheduled type labels and penalties across all 18 turns, zero clamping for queued/seated customers of all types, cancellation/table release, exact service/eating/payment status timing, locked bills before and after payment, detached snapshots and duplicate-payment rejection. Existing suites retain lifecycle, availability, invalid-action, EOF, snapshot immutability and threshold checks. MainTest launches production Main; M5IntegrationTest wires real collaborators in-process. Focused M4 coordination tests still use doubles where explicitly documented.
+`run.sh` compiles production sources and launches `restaurantrush.Main`, which wires the real CLI, controller, turn manager, staff and entities. No test doubles or test classes are used in these two runs. Each fixture contains 36 commands: one Waiter choice followed by one Chef choice for each of 18 turns. Food choices and arrivals are deterministic; no seed or network access is required.
 
-Local execution: Temurin JDK 25.0.4.1, compilation with `--release 17`. Java 17 runtime was unavailable; no remote CI success is claimed. Final build, all 19 suites and all six production fixture runs passed. The CI definition retains Temurin 17 and existing checks, switching fixture smoke runs to Stage 2. Stage 1 evidence is preserved separately in [stage1-test-notes.md](stage1-test-notes.md).
+- **Victory:** `tests/fixtures/m5/victory.txt` schedules seating, ordering, cooking and serving. The first five customers pay; customer 6 remains seated with an unfinished Pasta order.
+- **Defeat:** `tests/fixtures/m5/defeat.txt` chooses `wait` for both staff every turn. Nobody is served or pays; two customers abandon.
 
-## Diagram scope
+## Expected and observed results
 
-The new stage2_integration.drawio and SVG share the same layout and describe Stage 2 relationships and extension points. The older Stage 1 draw.io/PNG pair is preserved as historical, not relabelled as current. A native draw.io PNG exporter was not installed, so no Stage 2 PNG was generated.
+Expected values come from the existing `MainTest` and `M5IntegrationTest` assertions. Actual values below were read from fresh production CLI runs and matched those assertions.
+
+| Metric | Victory expected | Victory actual | Defeat expected | Defeat actual |
+| --- | --- | --- | --- | --- |
+| Outcome | Victory | Victory | Defeat | Defeat |
+| Completed turns | 18 | 18 | 18 | 18 |
+| Paid customers | 5 | 5 | 0 | 0 |
+| Revenue | $66.00 (6600 cents) | $66.00 (6600 cents) | $0.00 | $0.00 |
+| Average paid satisfaction | 79.20 | 79.20 | N/A | N/A |
+| Served customers | 5 | 5 | 0 | 0 |
+| Unhappy departures | 0 | 0 | 2 | 2 |
+
+Both processes exited successfully. Their transcripts contained exactly the sequential completion summaries `End of turn 1` through `End of turn 18`, one final outcome and `Turns used: 18`, with no turn 19 or premature end-of-input message.
+
+Victory requires **paid count ≥ 4 AND revenue ≥ 4500 cents AND average paid satisfaction ≥ 60**, after turn 18. The victory run satisfies all three. The defeat run misses the count and revenue targets and has no paid-customer average; `N/A` is not a qualifying average. `M5IntegrationTest` additionally verified the victory snapshot's unrounded average as `79.2`.
+
+## Existing automated checks
+
+All three commands below were executed successfully during this verification. Each recompiles sources and tests before running the selected test class.
+
+```sh
+./test.sh restaurantrush.integration.MainTest
+./test.sh restaurantrush.integration.M5IntegrationTest
+./test.sh restaurantrush.control.GameControllerTest
+```
+
+| Test | Integration level and evidence |
+| --- | --- |
+| `MainTest` | Launches production Main in separate JVMs with fixture input. Checks final CLI metrics, successful exit, 18 completion summaries and no early EOF/turn 19. Includes victory, defeat and other existing fixtures. |
+| `M5IntegrationTest` | Runs the real CLI and game collaborators in-process, wired by the test rather than Main. Checks fixture consumption, snapshots, customer/order/table states, final metrics and each completed-turn display. |
+| `GameControllerTest` | Calls game classes directly, without CLI input. Its victory-boundary checks use supplied statistics via `StatisticsRestaurant` and a recording Cashier, not real payment gameplay. Confirms exact thresholds pass and independently lowering paid count to 3, revenue to 4499 cents or average to 59.99 fails. |
+
+## Clean-checkout and tag verification
+
+The working tree was clean before this documentation was added. A fresh temporary export of the verified commit was created with `git archive`; all five commands above passed there without pre-existing build output, IDE settings or untracked files. Scripts are tracked as executable and both input fixtures are tracked. This verifies reproducibility from the committed files; the export did not contain `.git` metadata.
+
+No local `stage-1` tag existed when checked with `git tag --list stage-1`, so tagged-version verification was not possible. No remote tags were fetched and no tag was created. Repeat these commands against the eventual `stage-1` checkout before submission.
+
+## Coverage limits
+
+The two gameplay fixtures demonstrate one victory and one defeat, but do not separately demonstrate a CLI defeat caused solely by each individual target. Those independent threshold checks are direct controller tests using supplied statistics, as described above. No mismatch was observed in the executed scenarios.

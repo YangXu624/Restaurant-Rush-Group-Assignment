@@ -94,7 +94,7 @@ public class Stage2IntegrationTest {
     private static void testVictoryBillsAndTiming() throws Exception {
         Restaurant r = new Restaurant();
         GameController game = game(r);
-        List<String> commands = Files.readAllLines(Path.of("tests/fixtures/stage2/victory.txt"));
+        List<String> commands = Files.readAllLines(Path.of("tests/fixtures/m5/victory.txt"));
         equal(36, commands.size(), "One choice per staff per turn");
         GameSnapshot locked = null;
         int[] served = {3, 6, 10, 15, 16};
