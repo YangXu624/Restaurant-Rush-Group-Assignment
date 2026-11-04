@@ -37,9 +37,12 @@ public class Restaurant {
         }
         // Brief 2.1: base menu with prices in cents and preparation units.
         // Customer.chooseItem() depends on this order.
-        menu.add(new MenuItem("Salad", 900, 1));
+        MenuItem salad = new MenuItem("Salad", 900, 1);
+        MenuItem pasta = new MenuItem("Pasta", 1800, 2);
+        menu.add(salad);
         menu.add(new MenuItem("Burger", 1500, 1));
-        menu.add(new MenuItem("Pasta", 1800, 2));
+        menu.add(pasta);
+        menu.add(new ComboMeal(salad, pasta));
     }
 
     /**
@@ -319,7 +322,7 @@ public class Restaurant {
         return List.copyOf(tables);
     }
 
-    /** Returns a read-only copy of the menu in Salad, Burger, Pasta order. */
+    /** Returns a read-only copy of the menu in customer selection order. */
     public List<MenuItem> getMenu() {
         return List.copyOf(menu);
     }
