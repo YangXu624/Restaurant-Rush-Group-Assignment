@@ -79,6 +79,10 @@ public class WaiterTest {
 
         new Waiter().takeOrder(r, 3);
 
+        arrive(r, 4);
+        r.seat(4, 2);
+        new Waiter().takeOrder(r, 4);
+        assertEqual("Salad + Pasta", r.findOrder(4).getItem().getName(), "Customer 4 should order the combo");
         assertEqual("Pasta", r.findOrder(3).getItem().getName(), "Customer 3 should order Pasta");
     }
 
@@ -129,16 +133,16 @@ public class WaiterTest {
         Order order = critic.getOrder();
         assertTrue(r.findOrder(5) == order, "Critic and registry share one order");
         assertEqual(5, order.getId(), "Critic order ID matches its customer");
-        assertEqual("Pasta", order.getItem().getName(), "Critic ID 5 chooses the most expensive item");
-        assertEqual(1800, order.getBillCents(), "Critic pays full price");
-        assertEqual(2, order.getRemainingUnits(), "Critic Pasta requires two preparation units");
+        assertEqual("Salad + Pasta", order.getItem().getName(), "Critic ID 5 chooses the most expensive item");
+        assertEqual(2430, order.getBillCents(), "Critic pays full price");
+        assertEqual(3, order.getRemainingUnits(), "Critic combo requires three preparation units");
         assertEqual(0, r.getRevenueCents(), "Unpaid Critic order contributes no revenue");
 
         Restaurant regularRestaurant = new Restaurant();
         Customer regular = seated(regularRestaurant, 5);
         assertTrue(waiter.takeOrder(regularRestaurant, 5).isSuccess(), "Regular ID 5 can order");
-        assertEqual("Burger", regular.getOrder().getItem().getName(), "Regular ID 5 chooses Burger instead");
-        assertEqual(1500, regular.getOrder().getBillCents(), "Regular order remains full price");
+        assertEqual("Salad", regular.getOrder().getItem().getName(), "Regular ID 5 chooses Salad instead");
+        assertEqual(900, regular.getOrder().getBillCents(), "Regular order remains full price");
     }
 
     private static void testPaymentDoesNotRecalculateCustomerPrice() {
