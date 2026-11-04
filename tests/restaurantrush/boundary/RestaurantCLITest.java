@@ -108,8 +108,8 @@ public class RestaurantCLITest {
     private static void testDetailedDisplayAndLocale() {
         Fixture f = new Fixture("");
         GameSnapshot snapshot = new GameSnapshot(7, 4205, 260.0 / 3, List.of(4, 2),
-                List.of(new CustomerView(3, 76, CustomerStatus.SEATED, OrderStatus.PREPARING, "Pasta", 1, 2),
-                        new CustomerView(1, 84, CustomerStatus.PAID, OrderStatus.PAID, "Salad", 0, null)),
+                List.of(new CustomerView(3, 76, CustomerStatus.SEATED, OrderStatus.PREPARING, "Pasta", 1, 2, "Regular", 1800),
+                        new CustomerView(1, 84, CustomerStatus.PAID, OrderStatus.PAID, "Salad", 0, null, "Regular", 900)),
                 List.of(new TableView(1, null), new TableView(2, 3)), false, true, 1, 2, 1);
         Locale original = Locale.getDefault();
         try {
@@ -122,6 +122,7 @@ public class RestaurantCLITest {
                 "Paid: 1 | Served: 2 | Unhappy departures: 1", "Waiting queue: [4, 2]",
                 "Table 2: customer 3", "Customer 3 | satisfaction 76 | SEATED | table 2 | order: Pasta | PREPARING | 1 unit(s) remaining",
                 "Customer 1 | satisfaction 84 | PAID | table none | order: Salad | PAID | 0 unit(s) remaining",
+                "Type: Regular | Locked bill: $18.00", "Type: Regular | Locked bill: $9.00",
                 "Waiter: unavailable", "Chef: available"}) {
             contains(f.text(), expected);
         }
@@ -130,9 +131,10 @@ public class RestaurantCLITest {
     private static void testAvailabilityAndFeedback() {
         Fixture f = new Fixture("");
         f.cli.displayState(new GameSnapshot(18, 0, null, List.of(1),
-                List.of(new CustomerView(1, 100, CustomerStatus.WAITING, null, null, null, null)),
+                List.of(new CustomerView(1, 100, CustomerStatus.WAITING, null, null, null, null, "Regular", null)),
                 List.of(new TableView(1, null)), false, false, 0, 0, 0));
         contains(f.text(), "WAITING | table none | order: none");
+        contains(f.text(), "Type: Regular | Locked bill: none");
         contains(f.text(), "Waiter: unavailable");
         contains(f.text(), "Chef: unavailable");
         f.cli.showFeedback("Customer has not arrived.");

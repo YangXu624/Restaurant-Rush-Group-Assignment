@@ -71,6 +71,10 @@ public class RestaurantCLI {
             output.printf("  Customer %d | satisfaction %d | %s | table %s | order: %s%n",
                     customer.id(), customer.satisfaction(), customer.status(),
                     customer.tableId() == null ? "none" : customer.tableId().toString(), order);
+            output.println("    Type: " + customer.customerType() + " | Locked bill: "
+                    + (customer.billCents() == null ? "none"
+                            : String.format(Locale.ROOT, "$%d.%02d",
+                                    customer.billCents() / 100, customer.billCents() % 100)));
         }
         output.println("Waiter: " + (snapshot.waiterAvailable() ? "available" : "unavailable"));
         String chefAvailability = snapshot.chefAvailable() ? "available"

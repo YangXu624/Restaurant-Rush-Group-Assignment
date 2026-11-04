@@ -11,13 +11,13 @@ import restaurantrush.Main;
 public class MainTest {
     public static void main(String[] args) throws Exception {
         String victory = launch("victory.txt");
-        completed(victory, "Victory", "$66.00", "79.20", "Paid: 5 | Served: 5 | Unhappy departures: 0");
+        completed(victory, "Victory", "$67.50", "74.80", "Paid: 5 | Served: 5 | Unhappy departures: 0");
         String invalid = launch("invalid-input.txt");
-        completed(invalid, "Victory", "$66.00", "79.20", "Paid: 5 | Served: 5 | Unhappy departures: 0");
+        completed(invalid, "Victory", "$67.50", "74.80", "Paid: 5 | Served: 5 | Unhappy departures: 0");
         contains(invalid, "Invalid command.");
         contains(invalid, "IDs must be whole numbers");
         for (String fixture : List.of("defeat.txt", "abandonment.txt")) {
-            completed(launch(fixture), "Defeat", "$0.00", "N/A", "Paid: 0 | Served: 0 | Unhappy departures: 2");
+            completed(launch(fixture), "Defeat", "$0.00", "N/A", "Paid: 0 | Served: 0 | Unhappy departures: 1");
         }
         for (String fixture : List.of("eof-waiter.txt", "eof-chef.txt")) {
             String text = launch(fixture);

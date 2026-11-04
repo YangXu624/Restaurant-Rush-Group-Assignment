@@ -41,8 +41,10 @@ public class Waiter {
         }
 
         MenuItem item = c.chooseItem(r.getMenu());
+        int billCents = c.calculateBillCents(item);
         // The order shares its customer's ID so Restaurant.findOrder() can locate it.
-        Order order = new Order(customerId, item);
+        // Price calculation and order validation complete before either object is linked.
+        Order order = new Order(customerId, item, billCents);
         c.acceptOrder(order);
         r.registerOrder(order);
         return ActionResult.ok("Customer " + customerId + " ordered " + item.getName() + ".");

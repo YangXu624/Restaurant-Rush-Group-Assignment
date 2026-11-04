@@ -8,10 +8,12 @@ public class CustomerTest {
     public static void main(String[] args) {
         testInitialState();
         testFoodSelection();
+        testRegularBillingAndType();
         testOrderAcceptanceAndSeatingFailures();
         testCompleteLifecycleAndTiming();
         testServingPreconditions();
         testWaitingPenaltyBoundaries();
+        testOverriddenWaitingPenalty();
         testAbandonmentWithoutOrder();
         testAbandonmentCancelsSharedOrder();
         testFailedCancellationIsAtomic();
@@ -53,6 +55,23 @@ public class CustomerTest {
                 () -> customer.chooseItem(null), "Null menu");
         assertRejectedUnchanged(customer, IllegalArgumentException.class,
                 () -> customer.chooseItem(List.of()), "Empty menu");
+    }
+
+    private static void testRegularBillingAndType() {
+        Customer customer = new Customer(1);
+        assertNoChange(customer, () -> assertEqual("Regular", customer.getCustomerType(),
+                "Regular customer display label"), "Reading type does not mutate customer");
+        for (MenuItem item : baseMenu()) {
+            assertNoChange(customer, () -> assertEqual(item.getPriceCents(), customer.calculateBillCents(item),
+                    "Regular customer pays full menu price"), "Calculating a bill does not place an order");
+        }
+        for (int price : new int[] {0, Integer.MAX_VALUE}) {
+            MenuItem item = new MenuItem("Special", price, 1);
+            assertNoChange(customer, () -> assertEqual(price, customer.calculateBillCents(item),
+                    "Regular bill preserves the full nonnegative price"), "Billing preserves customer state");
+        }
+        assertRejectedUnchanged(customer, IllegalArgumentException.class,
+                () -> customer.calculateBillCents(null), "Cannot calculate a bill without a menu item");
     }
 
     private static void assertSelections(List<MenuItem> menu, String[] expectedNames) {
@@ -197,6 +216,52 @@ public class CustomerTest {
                     "Penalty alone must not perform abandonment");
             assertNoChange(customer, customer::applyWaitingPenalty, "Penalty at zero cannot go negative");
         }
+    }
+
+    private static void testOverriddenWaitingPenalty() {
+        for (boolean seated : new boolean[] {false, true}) {
+            Customer customer = new Customer(1) {
+                @Override
+                protected int waitingPenaltyPerTurn() {
+                    return 7;
+                }
+            };
+            if (seated) {
+                customer.seat();
+            }
+            customer.applyWaitingPenalty();
+            assertEqual(93, customer.getSatisfaction(), "Inherited algorithm uses overridden penalty");
+            for (int i = 1; i < 14; i++) {
+                customer.applyWaitingPenalty();
+            }
+            assertEqual(2, customer.getSatisfaction(), "Repeated overridden penalties");
+            customer.applyWaitingPenalty();
+            assertEqual(0, customer.getSatisfaction(), "Overridden penalty shares zero clamp");
+            assertEqual(seated ? CustomerStatus.SEATED : CustomerStatus.WAITING, customer.getStatus(),
+                    "Overridden penalty does not perform abandonment");
+            assertNoChange(customer, customer::applyWaitingPenalty, "Overridden penalty cannot go negative");
+            customer.abandon();
+            assertNoChange(customer, customer::applyWaitingPenalty, "Override preserves departed status guard");
+        }
+
+        Customer served = new Customer(1) {
+            @Override
+            protected int waitingPenaltyPerTurn() {
+                throw new AssertionError("Non-waiting customer must not request a penalty amount");
+            }
+        };
+        served.seat();
+        Order order = new Order(1, baseMenu().get(0));
+        served.acceptOrder(order);
+        order.prepareOneUnit();
+        order.markServed();
+        served.markServed(1);
+        assertNoChange(served, served::applyWaitingPenalty, "Override preserves eating status guard");
+        served.finishEating(2);
+        assertNoChange(served, served::applyWaitingPenalty, "Override preserves payment-ready status guard");
+        order.markPaid();
+        served.markPaid();
+        assertNoChange(served, served::applyWaitingPenalty, "Override preserves paid status guard");
     }
 
     private static void testAbandonmentWithoutOrder() {

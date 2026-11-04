@@ -20,7 +20,9 @@ public record CustomerView(
         OrderStatus orderStatus,
         String itemName,
         Integer remainingUnits,
-        Integer tableId) {
+        Integer tableId,
+        String customerType,
+        Integer billCents) {
 
     /** @throws IllegalArgumentException if a value or optional order group is invalid */
     public CustomerView {
@@ -33,8 +35,14 @@ public record CustomerView(
         if (status == null) {
             throw new IllegalArgumentException("Customer status cannot be null");
         }
-        boolean noOrder = orderStatus == null && itemName == null && remainingUnits == null;
-        boolean completeOrder = orderStatus != null && itemName != null && remainingUnits != null;
+        if (customerType == null || customerType.isBlank()) {
+            throw new IllegalArgumentException("Customer type cannot be null or blank");
+        }
+        if (billCents != null && billCents < 0) {
+            throw new IllegalArgumentException("Bill cannot be negative");
+        }
+        boolean noOrder = orderStatus == null && itemName == null && remainingUnits == null && billCents == null;
+        boolean completeOrder = orderStatus != null && itemName != null && remainingUnits != null && billCents != null;
         if (!noOrder && !completeOrder) {
             throw new IllegalArgumentException("Order fields must be all absent or all present");
         }

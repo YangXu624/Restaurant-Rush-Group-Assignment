@@ -2,9 +2,12 @@ package restaurantrush.staff;
 
 import restaurantrush.entity.Customer;
 import restaurantrush.entity.CustomerStatus;
+import restaurantrush.entity.CriticCustomer;
+import restaurantrush.entity.MenuItem;
 import restaurantrush.entity.Order;
 import restaurantrush.entity.OrderStatus;
 import restaurantrush.entity.Restaurant;
+import restaurantrush.entity.VIPCustomer;
 import restaurantrush.support.ActionResult;
 
 public class WaiterTest {
@@ -15,6 +18,10 @@ public class WaiterTest {
 
         testTakeOrderCreatesSharedOrder();
         testTakeOrderUsesCustomerMenuChoice();
+        testVipOrderAndPaymentUseOneDiscount();
+        testCriticOrderUsesPreferenceAndFullPrice();
+        testPaymentDoesNotRecalculateCustomerPrice();
+        testInvalidPricingDoesNotLinkOrRegisterOrder();
         testTakeOrderUnknownCustomerFails();
         testTakeOrderWaitingCustomerFails();
         testTakeOrderTwiceFails();
@@ -60,6 +67,7 @@ public class WaiterTest {
         assertTrue(order != null, "Customer should have an order");
         assertEqual(1, order.getId(), "Order ID should match customer ID");
         assertEqual(OrderStatus.PLACED, order.getStatus(), "New order should be PLACED");
+        assertEqual(900, order.getBillCents(), "Regular order uses the full menu price");
         assertTrue(r.findOrder(1) == order, "Registry and customer should share one order");
         assertEqual(1, r.getOrders().size(), "Exactly one order should be registered");
     }
@@ -72,6 +80,119 @@ public class WaiterTest {
         new Waiter().takeOrder(r, 3);
 
         assertEqual("Pasta", r.findOrder(3).getItem().getName(), "Customer 3 should order Pasta");
+    }
+
+    private static void testVipOrderAndPaymentUseOneDiscount() {
+        Restaurant r = new Restaurant();
+        Customer vip = new VIPCustomer(2);
+        r.addArrival(vip);
+        Waiter waiter = new Waiter();
+        assertTrue(waiter.seat(r, 2, 1).isSuccess(), "VIP can be seated normally");
+        assertTrue(waiter.takeOrder(r, 2).isSuccess(), "VIP can place an order normally");
+        Order order = vip.getOrder();
+        assertTrue(r.findOrder(2) == order, "VIP and restaurant share the same order");
+        assertEqual(2, order.getId(), "VIP order ID matches its customer");
+        assertEqual("Burger", order.getItem().getName(), "VIP retains deterministic menu choice");
+        assertEqual(1500, order.getItem().getPriceCents(), "VIP does not change the menu price");
+        assertEqual(1350, order.getBillCents(), "VIP bill is discounted at order placement");
+        assertEqual(0, r.getRevenueCents(), "Placing an order does not collect payment");
+        assertFalse(waiter.takeOrder(r, 2).isSuccess(), "VIP cannot order twice");
+        assertTrue(vip.getOrder() == order && r.findOrder(2) == order, "Rejected repeat keeps shared order");
+        assertEqual(1, r.getOrders().size(), "Rejected repeat does not register another order");
+        assertEqual(1350, order.getBillCents(), "Rejected repeat does not discount again");
+
+        assertTrue(new Chef().prepareOneUnit(order).isSuccess(), "VIP Burger needs one preparation unit");
+        assertTrue(waiter.serve(r, 2, 2).isSuccess(), "VIP order can be served normally");
+        vip.finishEating(3);
+        Cashier cashier = new Cashier();
+        assertFalse(cashier.collectOne(r, 3), "VIP cannot pay on the turn it becomes ready");
+        assertEqual(0, r.getRevenueCents(), "Revenue remains zero before eligibility");
+        assertTrue(cashier.collectOne(r, 4), "Cashier collects the VIP bill on a later turn");
+        assertEqual(1350, r.getRevenueCents(), "Payment uses the locked bill without a second discount");
+        assertEqual(1350, order.getBillCents(), "Payment preserves the locked bill");
+        assertEqual(CustomerStatus.PAID, vip.getStatus(), "VIP is marked paid");
+        assertEqual(OrderStatus.PAID, order.getStatus(), "VIP order is marked paid");
+        assertEqual(1, r.getPaidCount(), "VIP payment counted once");
+        assertTrue(r.getTables().get(0).isAvailable(), "VIP payment releases its table");
+        assertFalse(cashier.collectOne(r, 4), "Cannot collect twice in the same turn");
+        assertFalse(cashier.collectOne(r, 5), "Paid VIP cannot be charged on a later turn");
+        assertEqual(1350, r.getRevenueCents(), "Rejected collections do not add revenue");
+    }
+
+    private static void testCriticOrderUsesPreferenceAndFullPrice() {
+        Restaurant r = new Restaurant();
+        Customer critic = new CriticCustomer(5);
+        r.addArrival(critic);
+        Waiter waiter = new Waiter();
+        assertTrue(waiter.seat(r, 5, 1).isSuccess(), "Critic can be seated normally");
+        assertTrue(waiter.takeOrder(r, 5).isSuccess(), "Critic can order normally");
+        Order order = critic.getOrder();
+        assertTrue(r.findOrder(5) == order, "Critic and registry share one order");
+        assertEqual(5, order.getId(), "Critic order ID matches its customer");
+        assertEqual("Pasta", order.getItem().getName(), "Critic ID 5 chooses the most expensive item");
+        assertEqual(1800, order.getBillCents(), "Critic pays full price");
+        assertEqual(2, order.getRemainingUnits(), "Critic Pasta requires two preparation units");
+        assertEqual(0, r.getRevenueCents(), "Unpaid Critic order contributes no revenue");
+
+        Restaurant regularRestaurant = new Restaurant();
+        Customer regular = seated(regularRestaurant, 5);
+        assertTrue(waiter.takeOrder(regularRestaurant, 5).isSuccess(), "Regular ID 5 can order");
+        assertEqual("Burger", regular.getOrder().getItem().getName(), "Regular ID 5 chooses Burger instead");
+        assertEqual(1500, regular.getOrder().getBillCents(), "Regular order remains full price");
+    }
+
+    private static void testPaymentDoesNotRecalculateCustomerPrice() {
+        Restaurant r = new Restaurant();
+        int[] currentQuote = {700};
+        Customer customer = new Customer(1) {
+            @Override
+            public int calculateBillCents(MenuItem item) {
+                return currentQuote[0];
+            }
+        };
+        r.addArrival(customer);
+        Waiter waiter = new Waiter();
+        assertTrue(waiter.seat(r, 1, 1).isSuccess(), "Custom-priced customer is seated");
+        assertTrue(waiter.takeOrder(r, 1).isSuccess(), "Waiter uses the customer's price method");
+        Order order = customer.getOrder();
+        assertEqual(700, order.getBillCents(), "Order captures the price at placement");
+        currentQuote[0] = 200;
+        assertTrue(new Chef().prepareOneUnit(order).isSuccess(), "Custom-priced order can be prepared");
+        assertTrue(waiter.serve(r, 1, 2).isSuccess(), "Custom-priced order can be served");
+        customer.finishEating(3);
+        assertTrue(new Cashier().collectOne(r, 4), "Custom-priced order can be paid");
+        assertEqual(700, order.getBillCents(), "Later pricing changes do not affect the order");
+        assertEqual(700, r.getRevenueCents(), "Cashier collects the original price rather than requesting a new one");
+    }
+
+    private static void testInvalidPricingDoesNotLinkOrRegisterOrder() {
+        for (boolean throwsDuringPricing : new boolean[] {false, true}) {
+            Restaurant r = new Restaurant();
+            Customer customer = new Customer(1) {
+                @Override
+                public int calculateBillCents(MenuItem item) {
+                    if (throwsDuringPricing) {
+                        throw new IllegalArgumentException("Invalid price quote");
+                    }
+                    return -1;
+                }
+            };
+            r.addArrival(customer);
+            Waiter waiter = new Waiter();
+            assertTrue(waiter.seat(r, 1, 1).isSuccess(), "Invalid-pricing fixture is seated");
+            assertThrows(IllegalArgumentException.class, () -> waiter.takeOrder(r, 1),
+                    "Invalid price or pricing failure must be rejected before linking");
+            assertTrue(customer.getOrder() == null, "Pricing failure does not link an order");
+            assertTrue(r.findOrder(1) == null, "Pricing failure does not register an order");
+            assertEqual(0, r.getOrders().size(), "Registry stays empty after pricing failure");
+            assertEqual(CustomerStatus.SEATED, customer.getStatus(), "Pricing failure preserves customer status");
+            assertEqual(100, customer.getSatisfaction(), "Pricing failure preserves satisfaction");
+            assertTrue(r.getTables().get(0).getOccupant() == customer, "Pricing failure preserves occupancy");
+            assertFalse(r.getWaitingQueue().contains(customer), "Pricing failure does not requeue the customer");
+            assertEqual(0, r.getRevenueCents(), "Pricing failure creates no revenue");
+            assertEqual(0, r.getPaidCount(), "Pricing failure creates no payment");
+            assertEqual(0, r.getServedCount(), "Pricing failure creates no service");
+        }
     }
 
     private static void testTakeOrderUnknownCustomerFails() {
@@ -146,6 +267,18 @@ public class WaiterTest {
         Customer c = arrive(r, id);
         r.seat(id, 1);
         return c;
+    }
+
+    private static void assertThrows(Class<? extends Throwable> expected, Runnable operation, String message) {
+        try {
+            operation.run();
+        } catch (Throwable failure) {
+            if (expected.isInstance(failure)) {
+                return;
+            }
+            throw new AssertionError(message + ": unexpected exception", failure);
+        }
+        throw new AssertionError(message + ": expected " + expected.getSimpleName());
     }
 
     private static void assertEqual(Object expected, Object actual, String message) {

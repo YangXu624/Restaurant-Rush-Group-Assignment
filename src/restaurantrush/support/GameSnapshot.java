@@ -80,7 +80,8 @@ public record GameSnapshot(
                     order == null ? null : order.getStatus(),
                     order == null ? null : order.getItem().getName(),
                     order == null ? null : order.getRemainingUnits(),
-                    tableIdsByCustomer.get(customer.getId())));
+                    tableIdsByCustomer.get(customer.getId()), customer.getCustomerType(),
+                    order == null ? null : order.getBillCents()));
         }
 
         int paidCount = r.getPaidCount();
