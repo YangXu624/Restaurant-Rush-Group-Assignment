@@ -6,13 +6,13 @@ Repository URL: [https://github.com/YangXu624/Restaurant-Rush-Group-Assignment](
 
 ---
 
-## 1. Project Overview & Stage 1 Status
+## 1. Project Overview
 
-**Stage 1 is fully implemented, verified, and playable.**
+Stage 2 adds VIP and Critic customers to the playable Stage 1 game. The original regular-only game is available at the `stage-1` tag.
 
 The simulation runs for a fixed sequence of **18 turns**. The player manages restaurant floor operations through a command-line interface (CLI), directing a Waiter and Chef each turn while an automated Cashier handles billing. Customer arrivals, menu selection, and order preparation follow a completely deterministic schedule.
 
-### Team Member Responsibilities & Module Ownership
+### Stage 1 Team Member Responsibilities & Module Ownership
 
 | Member | Module Area | Types & Packages | Core Responsibilities |
 | --- | --- | --- | --- |
@@ -24,7 +24,7 @@ The simulation runs for a fixed sequence of **18 turns**. The player manages res
 
 ---
 
-## 2. Game Rules & Mechanics (Stage 1)
+## 2. Game Rules & Mechanics (Stage 2)
 
 ### Base Configuration
 - **Total Turns:** Exactly 18 turns. The game does not terminate early.
@@ -34,10 +34,9 @@ The simulation runs for a fixed sequence of **18 turns**. The player manages res
   - `Salad`: \$9.00 (900¢), requires **1 cooking unit**.
   - `Burger`: \$15.00 (1500¢), requires **1 cooking unit**.
   - `Pasta`: \$18.00 (1800¢), requires **2 cooking units**.
-  - Dish assigned deterministically upon ordering: `menu.get((customerId - 1) % 3)`.
 - **Customer Lifecycle & Satisfaction:**
   - Customers begin with **100** satisfaction.
-  - While `WAITING` (in queue) or `SEATED` (waiting for food), satisfaction decreases by **8 points per turn** (clamped at 0).
+  - While `WAITING` (in queue) or `SEATED` (waiting for food), satisfaction decreases at the rate for that customer type (minimum 0).
   - If satisfaction drops to 0 at the end of a turn, the customer abandons the restaurant (`LEFT`), freeing any table and cancelling their order.
   - Once `SERVED`, satisfaction freezes. The customer eats for 1 full turn (`servedTurn < currentTurn`), then transitions to `READY_TO_PAY`.
 - **Cashier Billing:**
@@ -45,6 +44,16 @@ The simulation runs for a fixed sequence of **18 turns**. The player manages res
   - Customers can only pay from the turn *after* they become ready (`readyToPayTurn < currentTurn`). Even though eating completes before Cashier collection, customers who just became ready that turn are not eligible yet (e.g., served on turn 3 $\to$ finishes eating on turn 4 $\to$ eligible to pay from turn 5).
   - Priority: earliest ready-to-pay turn; ties are broken by lower customer ID.
   - Upon payment, revenue is collected, the table is freed, and the customer transitions to `PAID`.
+
+### Customer types
+
+| Customer | Arrival turns (IDs) | Satisfaction lost per waiting turn | Dish choice | Bill |
+| --- | --- | --- | --- | --- |
+| Regular | 1, 7, 10, 16 (IDs 1, 3, 4, 6) | 8 | Cycle through the menu using `(id - 1) % menu.size()` | Full price |
+| VIP | 4 (ID 2) | 5 | Same rule as Regular | 10% off, rounded to the nearest cent (half up) |
+| Critic | 13 (ID 5) | 12 | Highest-priced item, first in menu order on a tie | Full price |
+
+The Waiter asks each customer to choose a dish and calculate its bill. Java calls the method for that customer's class. The order stores the price at that point, and the Cashier collects it at payment. In the base game the VIP orders a $13.50 Burger and the Critic orders an $18.00 Pasta that takes two Chef actions.
 
 ### End-of-Game Evaluation (Turn 18)
 Victory requires satisfying **all three** targets simultaneously at the conclusion of turn 18:
@@ -90,7 +99,7 @@ The Chef acts after the Waiter's choice has been processed:
 ```
 
 ### Automated Unit & Integration Tests
-The repository includes a comprehensive standalone test suite (17 suites covering all units, contracts, and fixtures) without external build tool dependencies:
+The repository includes a comprehensive standalone test suite (19 suites covering all units, contracts, and fixtures) without external build tool dependencies:
 ```sh
 ./test.sh
 ```
@@ -98,10 +107,10 @@ The repository includes a comprehensive standalone test suite (17 suites coverin
 ### Reproducible Fixture Runs
 Automated end-to-end runs using standard input fixtures:
 ```sh
-# Reproducible Victory Run (Turns 1-18 -> Victory: $66.00 revenue, 5 paid, 79.20 avg satisfaction)
+# Reproducible Victory Run (Turns 1-18 -> Victory: $67.50 revenue, 5 paid, 74.80 avg satisfaction)
 ./run.sh < tests/fixtures/m5/victory.txt
 
-# Reproducible Defeat Run (Turns 1-18 -> Defeat: 0 paid, 2 departures)
+# Reproducible Defeat Run (Turns 1-18 -> Defeat: 0 paid, 1 departure)
 ./run.sh < tests/fixtures/m5/defeat.txt
 
 # Abandonment handling demonstration
@@ -111,7 +120,7 @@ Automated end-to-end runs using standard input fixtures:
 ./run.sh < tests/fixtures/m5/invalid-input.txt
 ```
 
-Reproducible Stage 1 victory and defeat scenarios, including commands, test fixtures, expected results, and verified outcomes, are documented in [docs/test-notes.md](docs/test-notes.md).
+Stage 2 results and historical Stage 1 runs are documented in [docs/test-notes.md](docs/test-notes.md).
 
 ---
 
@@ -127,6 +136,8 @@ src/restaurantrush/
 │   └── TurnManager.java      # Turn lifecycle, arrival clock, staff phase tracking
 ├── entity/
 │   ├── Customer.java         # Lifecycle state, satisfaction tracking
+│   ├── VIPCustomer.java      # Lower waiting penalty and discounted bill
+│   ├── CriticCustomer.java   # Higher waiting penalty and highest-price dish choice
 │   ├── CustomerStatus.java   # WAITING, SEATED, SERVED, READY_TO_PAY, PAID, LEFT
 │   ├── MenuItem.java         # Name, price (cents), cooking time (units)
 │   ├── Order.java            # Dish association, preparation progress, status
@@ -158,3 +169,25 @@ The team successfully aligned and closed all Stage 1 open items from Section 9 o
    Domain entities are never leaked directly to the boundary. `GameSnapshot` uses Java 17 records (`CustomerView`, `TableView`) and unmodifiable collections. All arrived customers (active, paid, and departed) are retained in historical snapshots for complete visibility.
 4. **Turn Accounting:**
    `GameSnapshot.turn()` reports the active turn number. The CLI cleanly separates start-of-turn prompt headers from end-of-turn summaries to prevent off-by-one discrepancies.
+
+## 7. Changes from Stage 1 to Stage 2
+
+[Compare the Stage 1 tag with the merged Stage 2 gameplay](https://github.com/YangXu624/Restaurant-Rush-Group-Assignment/compare/stage-1...f56f8f5fdb2bb8b2faea68cbb9f7be0027036841). File names below are grouped by their role. No files were deleted.
+
+| New files | Reason |
+| --- | --- |
+| `VIPCustomer.java`, `CriticCustomer.java` | Give each type its own waiting penalty and override the pricing or dish choice it changes. |
+| `CustomerTypesTest.java`, `Stage2IntegrationTest.java` | Check the three customer types individually and through a complete game, including abandonment and payment. |
+| `.github/workflows/main.yml` | Run build and test checks on GitHub. This workflow was added between stages, before the gameplay PR. |
+
+| Existing files changed | Reason |
+| --- | --- |
+| `Customer.java` | Provide regular defaults for the waiting penalty, price and type label. Keep the customer lifecycle shared. |
+| `TurnManager.java` | Create a VIP and a Critic in two of the six arrival slots. |
+| `Waiter.java`, `Order.java` | Ask the customer for the bill and store it when the order is placed. |
+| `CustomerView.java`, `GameSnapshot.java`, `RestaurantCLI.java` | Show the customer type and the locked bill once an order exists. |
+| `CustomerTest.java`, `OrderTest.java`, `WaiterTest.java` | Check regular defaults, stored prices and customer-specific order placement. |
+| `CustomerViewTest.java`, `GameSnapshotTest.java`, `RestaurantCLITest.java` | Check the additional view fields and their CLI display. |
+| `tests/fixtures/m5/victory.txt`, `tests/fixtures/m5/invalid-input.txt` | Allow a second cooking action for the Critic's Pasta. |
+| `MainTest.java`, `M5IntegrationTest.java` | Verify the revised fixture outcomes through the launcher and CLI. |
+| `README.md`, `docs/test-notes.md` | Document the new rules, file changes and reproducible outcomes for both stages. |
