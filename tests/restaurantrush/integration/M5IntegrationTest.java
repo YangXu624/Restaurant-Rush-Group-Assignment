@@ -59,30 +59,30 @@ public class M5IntegrationTest {
     private static void testVictory(Result result) {
         complete(result, true);
         GameSnapshot state = result.state();
-        equal(5, state.paidCount(), "Victory paid count");
+        equal(4, state.paidCount(), "Victory paid count");
         equal(5, state.servedCount(), "Victory served count");
         equal(0, state.abandonedCount(), "Victory departures");
-        equal(6750, state.revenueCents(), "Five paid menu bills");
-        equal(74.8, state.averagePaidSatisfaction(), "Unrounded recorded average");
-        equal(List.of(), state.waitingCustomerIds(), "All customers seated");
-        equal(List.of(new TableView(1, null), new TableView(2, 6)), state.tables(), "Final customer retains table");
+        equal(6480, state.revenueCents(), "Four paid bills exclude the served Critic");
+        equal(77.5, state.averagePaidSatisfaction(), "Unrounded recorded average");
+        equal(List.of(6), state.waitingCustomerIds(), "Last arrival still queued");
+        equal(List.of(new TableView(1, 5), new TableView(2, null)), state.tables(), "Served Critic retains table");
         equal(List.of(1, 2, 3, 4, 5, 6), state.customers().stream().map(CustomerView::id).toList(), "Six arrivals in order");
-        equal(new CustomerView(6, 76, CustomerStatus.SEATED, null, null, null, 2, "Regular", null),
+        equal(new CustomerView(6, 76, CustomerStatus.WAITING, null, null, null, null, "Regular", null),
                 state.customers().get(5), "Turn-16 arrival cannot complete payment");
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 4; i++) {
             equal(CustomerStatus.PAID, state.customers().get(i).status(), "Earlier customer paid");
             equal(null, state.customers().get(i).tableId(), "Paid customer releases table");
         }
         String text = result.text();
         contains(text, "Type: VIP | Locked bill: $13.50");
-        contains(text, "Type: Critic | Locked bill: $18.00");
+        contains(text, "Type: Critic | Locked bill: $24.30");
         contains(turnDisplay(text, 9), "Customer 3 | satisfaction 84 | SEATED | table 1 | order: Pasta | PREPARING | 1 unit(s) remaining");
         contains(turnDisplay(text, 10), "Customer 3 | satisfaction 76 | SEATED | table 1 | order: Pasta | READY | 0 unit(s) remaining");
         contains(turnDisplay(text, 11), "Customer 3 | satisfaction 76 | SERVED");
         contains(turnDisplay(text, 12), "Customer 3 | satisfaction 76 | READY_TO_PAY");
         contains(text, "End of turn 11\nRevenue: $22.50");
         contains(text, "End of turn 12\nRevenue: $40.50");
-        contains(text, "Victory\nRevenue: $67.50\nAverage paid satisfaction: 74.80");
+        contains(text, "Victory\nRevenue: $64.80\nAverage paid satisfaction: 77.50");
     }
 
     private static void testDefeat(Result result) {

@@ -97,9 +97,9 @@ public class Stage2IntegrationTest {
         List<String> commands = Files.readAllLines(Path.of("tests/fixtures/m5/victory.txt"));
         equal(36, commands.size(), "One choice per staff per turn");
         GameSnapshot locked = null;
-        int[] served = {3, 6, 10, 15, 16};
-        int[] satisfaction = {84, 90, 76, 60, 64};
-        int[] bills = {900, 1350, 1800, 900, 1800};
+        int[] served = {3, 6, 10, 15, 18};
+        int[] satisfaction = {84, 90, 76, 60, 40};
+        int[] bills = {900, 1350, 1800, 2430, 2430};
         for (int turn = 1; turn <= 18; turn++) {
             game.startTurn();
             for (int choice = 0; choice < 2; choice++) {
@@ -119,9 +119,14 @@ public class Stage2IntegrationTest {
                 equal(1350, locked.customers().get(1).billCents(), "VIP bill before payment");
                 equal("Burger", locked.customers().get(1).itemName(), "VIP dish");
             }
+            if (turn == 13) {
+                equal(1, r.findOrder(4).getRemainingUnits(), "Two Chef actions leave one combo unit");
+                equal(OrderStatus.PREPARING, r.findOrder(4).getStatus(), "Combo is still cooking");
+            }
             if (turn == 14) {
-                equal("Pasta", r.findOrder(5).getItem().getName(), "Critic preference");
-                equal(1, r.findOrder(5).getRemainingUnits(), "Pasta needs a second Chef choice");
+                equal(0, r.findOrder(4).getRemainingUnits(), "Third Chef action finishes the combo");
+                equal(OrderStatus.READY, r.findOrder(4).getStatus(), "Combo is ready to serve next turn");
+                equal("Salad + Pasta", r.findOrder(5).getItem().getName(), "Critic preference");
             }
             game.finishTurn();
             for (int i = 0; i < served.length; i++) {
@@ -143,11 +148,11 @@ public class Stage2IntegrationTest {
         equal(1350, locked.customers().get(1).billCents(), "Old snapshot bill retained");
         equal(CustomerStatus.SEATED, locked.customers().get(1).status(), "Old snapshot detached");
         equal(null, end.customers().get(5).billCents(), "No order means absent bill");
-        equal(6750, end.revenueCents(), "Sum locked bills");
-        equal(74.8, end.averagePaidSatisfaction(), "374 / 5 paid satisfaction");
+        equal(6480, end.revenueCents(), "Sum locked bills");
+        equal(77.5, end.averagePaidSatisfaction(), "310 / 4 paid satisfaction");
         equal(true, game.isVictory(), "Victory after completion");
         equal(false, new Cashier().collectOne(r, 19), "Paid customers cannot pay twice");
-        equal(6750, r.getRevenueCents(), "No duplicate revenue");
+        equal(6480, r.getRevenueCents(), "No duplicate revenue");
     }
 
     private static GameController game(Restaurant r) {
