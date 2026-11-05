@@ -33,6 +33,10 @@ public class RestaurantCLI {
     public void run() {
         while (!controller.isFinished()) {
             controller.startTurn();
+            // Temporary bridge until interactive Host choices are added.
+            if (!controller.waitHost().isSuccess()) {
+                throw new IllegalStateException("Host skip failed at the start of the turn");
+            }
             GameSnapshot start = controller.getSnapshot();
             displayState(start);
             if (!chooseTask(true) || !chooseTask(false)) {

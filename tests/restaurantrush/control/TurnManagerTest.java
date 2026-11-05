@@ -27,7 +27,8 @@ public class TurnManagerTest {
         RecordingCashier cashier = new RecordingCashier();
         Restaurant restaurant = new Restaurant();
         TurnManager manager = new TurnManager(cashier);
-        equal(new State(1, false, false, false), State.capture(manager), "Initial state");
+        equal(new State(1, false, false, false, false), State.capture(manager), "Initial state");
+        rejected(manager, IllegalStateException.class, manager::recordHostTask);
         rejected(manager, IllegalArgumentException.class, () -> manager.beginTurn(null));
         rejected(manager, IllegalArgumentException.class, () -> manager.resolveTurn(null));
         rejected(manager, IllegalStateException.class, manager::recordWaiterTask);
@@ -37,8 +38,8 @@ public class TurnManagerTest {
         equal(0, restaurant.getCustomers().size(), "No arrival before start");
 
         manager.beginTurn(restaurant);
-        equal(new State(1, false, true, false), State.capture(manager), "Waiter starts first");
-        // Repeated reads must not consume either choice.
+        equal(new State(1, false, true, false, false), State.capture(manager), "Host starts first");
+        // Repeated reads must not consume any choice.
         equal(State.capture(manager), State.capture(manager), "Availability checks are pure");
         rejected(manager, IllegalStateException.class, manager::recordChefTask);
         rejected(manager, IllegalStateException.class, () -> manager.beginTurn(restaurant));
@@ -48,8 +49,13 @@ public class TurnManagerTest {
         equal(1, restaurant.getCustomers().size(), "Duplicate start adds no arrival");
         equal(100, restaurant.findCustomer(1).getSatisfaction(), "Rejected resolution has no penalty");
 
+        rejected(manager, IllegalStateException.class, manager::recordWaiterTask);
+        manager.recordHostTask();
+        rejected(manager, IllegalStateException.class, manager::recordHostTask);
+        rejected(manager, IllegalStateException.class, () -> manager.resolveTurn(restaurant));
+        equal(true, manager.canAssignWaiter(), "Host unlocks Waiter");
         manager.recordWaiterTask();
-        equal(new State(1, false, false, true), State.capture(manager), "Chef follows Waiter");
+        equal(new State(1, false, false, false, true), State.capture(manager), "Chef follows Waiter");
         rejected(manager, IllegalStateException.class, manager::recordWaiterTask);
         rejected(manager, IllegalStateException.class, () -> manager.resolveTurn(restaurant));
         rejected(manager, IllegalArgumentException.class, () -> manager.resolveTurn(null));
@@ -68,14 +74,15 @@ public class TurnManagerTest {
         rejected(manager, IllegalStateException.class, manager::recordWaiterTask);
         rejected(manager, IllegalStateException.class, manager::recordChefTask);
         rejected(manager, IllegalArgumentException.class, () -> manager.resolveTurn(null));
+        rejected(manager, IllegalStateException.class, manager::recordHostTask);
         equal(1, cashier.calls, "Duplicate resolution does not call Cashier");
         equal(92, restaurant.findCustomer(1).getSatisfaction(), "Duplicate resolution has no penalty");
         manager.advanceTurn();
-        equal(new State(2, false, false, false), State.capture(manager), "Advance closes turn");
+        equal(new State(2, false, false, false, false), State.capture(manager), "Advance closes turn");
         rejected(manager, IllegalStateException.class, manager::advanceTurn);
         rejected(manager, IllegalStateException.class, () -> manager.resolveTurn(restaurant));
         manager.beginTurn(restaurant);
-        equal(new State(2, false, true, false), State.capture(manager), "Next turn resets choices");
+        equal(new State(2, false, true, false, false), State.capture(manager), "Next turn resets choices");
     }
 
     private static void testArrivalFailurePreservesLifecycle() {
@@ -86,7 +93,7 @@ public class TurnManagerTest {
         equal(1, restaurant.getCustomers().size(), "Rejected arrival preserves history");
         // A separate valid fixture proves the failed start did not open the turn.
         manager.beginTurn(new Restaurant());
-        equal(true, manager.canAssignWaiter(), "Start remains available after arrival rejection");
+        equal(true, manager.canAssignHost(), "Start remains available after arrival rejection");
     }
 
     private static void testAutomaticPhaseOrderAndEatingTiming() {
@@ -114,7 +121,7 @@ public class TurnManagerTest {
             equal(4, otherWaiting.getSatisfaction(), "No interleaved penalties");
             equal(2, r.getWaitingQueue().size(), "Abandonment has not run before Cashier");
         };
-        chooseBoth(manager);
+        chooseAll(manager);
         manager.resolveTurn(restaurant);
         equal(1, cashier.calls, "Cashier invoked once");
         equal(CustomerStatus.LEFT, waiting.getStatus(), "Abandonment follows zero-producing penalty");
@@ -133,14 +140,14 @@ public class TurnManagerTest {
                 equal(2, customer.getReadyToPayTurn(), "Readiness timestamp is current turn");
             }
         };
-        chooseBoth(manager);
+        chooseAll(manager);
         manager.resolveTurn(restaurant);
         equal(2, cashier.calls, "One call per resolution");
         equal(2, restaurant.getAbandonedCount(), "Departed customers not removed twice");
         manager.advanceTurn();
         manager.beginTurn(restaurant);
         cashier.onCollect = (r, turn) -> equal(2, first.getReadyToPayTurn(), "Readiness timestamp retained");
-        chooseBoth(manager);
+        chooseAll(manager);
         manager.resolveTurn(restaurant);
     }
 
@@ -159,7 +166,7 @@ public class TurnManagerTest {
             }
             equal((turn - 1) / 3 + 1, restaurant.getCustomers().size(), "Arrival count");
             rejected(manager, IllegalStateException.class, () -> manager.beginTurn(restaurant));
-            chooseBoth(manager);
+            chooseAll(manager);
             manager.resolveTurn(restaurant);
             equal(turn, cashier.calls, "Cashier runs even on final turn");
             equal(turn, cashier.turns.get(turn - 1), "Cashier receives every turn in order");
@@ -174,12 +181,13 @@ public class TurnManagerTest {
         equal(List.of(1, 4, 7, 10, 13, 16), arrivalTurns, "Exact arrival turns");
         equal(List.of(1, 2, 3, 4, 5, 6),
                 restaurant.getCustomers().stream().map(Customer::getId).toList(), "Arrival IDs");
-        equal(new State(18, true, false, false), State.capture(manager), "Final state");
+        equal(new State(18, true, false, false, false), State.capture(manager), "Final state");
         rejected(manager, IllegalStateException.class, () -> manager.beginTurn(restaurant));
         rejected(manager, IllegalStateException.class, () -> manager.resolveTurn(restaurant));
         rejected(manager, IllegalStateException.class, manager::advanceTurn);
         rejected(manager, IllegalStateException.class, manager::recordWaiterTask);
         rejected(manager, IllegalStateException.class, manager::recordChefTask);
+        rejected(manager, IllegalStateException.class, manager::recordHostTask);
         rejected(manager, IllegalArgumentException.class, () -> manager.beginTurn(null));
         rejected(manager, IllegalArgumentException.class, () -> manager.resolveTurn(null));
         equal(6, restaurant.getCustomers().size(), "No arrivals after completion");
@@ -193,7 +201,7 @@ public class TurnManagerTest {
         IllegalStateException failure = new IllegalStateException("Controlled Cashier failure");
         cashier.onCollect = (r, turn) -> { throw failure; };
         manager.beginTurn(restaurant);
-        chooseBoth(manager);
+        chooseAll(manager);
         try {
             manager.resolveTurn(restaurant);
             throw new AssertionError("Expected collaborator failure");
@@ -219,7 +227,8 @@ public class TurnManagerTest {
         return customer;
     }
 
-    private static void chooseBoth(TurnManager manager) {
+    private static void chooseAll(TurnManager manager) {
+        manager.recordHostTask();
         manager.recordWaiterTask();
         manager.recordChefTask();
     }
@@ -256,10 +265,10 @@ public class TurnManagerTest {
         }
     }
 
-    private record State(int turn, boolean finished, boolean waiter, boolean chef) {
+    private record State(int turn, boolean finished, boolean host, boolean waiter, boolean chef) {
         static State capture(TurnManager manager) {
             return new State(manager.getCurrentTurn(), manager.isFinished(),
-                    manager.canAssignWaiter(), manager.canAssignChef());
+                    manager.canAssignHost(), manager.canAssignWaiter(), manager.canAssignChef());
         }
     }
 

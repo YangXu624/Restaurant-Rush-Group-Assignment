@@ -8,6 +8,7 @@ import restaurantrush.control.TurnManager;
 import restaurantrush.entity.Restaurant;
 import restaurantrush.staff.Cashier;
 import restaurantrush.staff.Chef;
+import restaurantrush.staff.Host;
 import restaurantrush.staff.Waiter;
 
 /** Creates the shared Stage 1 collaborators and launches the console game. */
@@ -16,9 +17,10 @@ public class Main {
         Restaurant restaurant = new Restaurant();
         Cashier cashier = new Cashier();
         TurnManager turnManager = new TurnManager(cashier);
+        Host host = new Host();
         Waiter waiter = new Waiter();
         Chef chef = new Chef();
-        GameController controller = new GameController(restaurant, turnManager, waiter, chef);
+        GameController controller = new GameController(restaurant, turnManager, host, waiter, chef);
         Scanner input = new Scanner(System.in, StandardCharsets.UTF_8);
         new RestaurantCLI(controller, input, System.out).run();
     }

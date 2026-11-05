@@ -12,6 +12,7 @@ import restaurantrush.entity.OrderStatus;
 import restaurantrush.entity.Restaurant;
 import restaurantrush.staff.Cashier;
 import restaurantrush.staff.Chef;
+import restaurantrush.staff.Host;
 import restaurantrush.staff.Waiter;
 
 /** Runs the CLI with real game collaborators; no launcher wiring is required. */
@@ -22,6 +23,7 @@ public class RestaurantCLIRunTest {
         testRejectedActionsRetrySameChoice();
         testOrderingCookingServingAndPayment();
         testResolutionFailurePropagates();
+        testHostSkipFailureStopsCLI();
         System.out.println("All RestaurantCLI turn-loop tests passed successfully!");
     }
 
@@ -108,6 +110,24 @@ public class RestaurantCLIRunTest {
         noOutcome(f);
     }
 
+    private static void testHostSkipFailureStopsCLI() {
+        Restaurant restaurant = new Restaurant();
+        TurnManager manager = new TurnManager(new Cashier());
+        GameController controller = new GameController(restaurant, manager, new Host(), new Waiter(), new Chef()) {
+            @Override
+            public restaurantrush.support.ActionResult waitHost() {
+                return restaurantrush.support.ActionResult.fail("Controlled Host skip failure");
+            }
+        };
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        RestaurantCLI cli = new RestaurantCLI(controller, new Scanner("wait\nwait\n"), new PrintStream(bytes));
+        expect(IllegalStateException.class, cli::run);
+        equal(true, manager.canAssignHost(), "Failed bridge leaves Host phase open");
+        equal(100, restaurant.findCustomer(1).getSatisfaction(), "No resolution after bridge failure");
+        equal(1, manager.getCurrentTurn(), "No advancement after bridge failure");
+        equal("", bytes.toString(StandardCharsets.UTF_8), "No display or prompt after bridge failure");
+    }
+
     private static void assertIncomplete(Fixture f) {
         equal(false, f.controller.isFinished(), "EOF is not game completion");
         contains(f.text(), "Input ended. The current turn was not completed.");
@@ -136,7 +156,7 @@ public class RestaurantCLIRunTest {
 
         Fixture(String commands, Cashier cashier) {
             manager = new TurnManager(cashier);
-            controller = new GameController(restaurant, manager, new Waiter(), new Chef());
+            controller = new GameController(restaurant, manager, new Host(), new Waiter(), new Chef());
             input = new Scanner(commands);
             cli = new RestaurantCLI(controller, input, output);
         }

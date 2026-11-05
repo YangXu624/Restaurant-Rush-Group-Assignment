@@ -16,6 +16,7 @@ import restaurantrush.entity.OrderStatus;
 import restaurantrush.entity.Restaurant;
 import restaurantrush.staff.Cashier;
 import restaurantrush.staff.Chef;
+import restaurantrush.staff.Host;
 import restaurantrush.staff.Waiter;
 import restaurantrush.support.CustomerView;
 import restaurantrush.support.GameSnapshot;
@@ -175,7 +176,7 @@ public class M5IntegrationTest {
         Game(Scanner input, PrintStream output) {
             Restaurant restaurant = new Restaurant();
             TurnManager manager = new TurnManager(new Cashier());
-            controller = new GameController(restaurant, manager, new Waiter(), new Chef());
+            controller = new GameController(restaurant, manager, new Host(), new Waiter(), new Chef());
             cli = new RestaurantCLI(controller, input, output);
         }
     }

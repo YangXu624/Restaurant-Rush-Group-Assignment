@@ -14,6 +14,7 @@ import restaurantrush.entity.Restaurant;
 import restaurantrush.entity.VIPCustomer;
 import restaurantrush.staff.Cashier;
 import restaurantrush.staff.Chef;
+import restaurantrush.staff.Host;
 import restaurantrush.staff.Waiter;
 import restaurantrush.support.ActionResult;
 import restaurantrush.support.GameSnapshot;
@@ -34,6 +35,7 @@ public class Stage2IntegrationTest {
         int[] penalties = {8, 5, 8, 8, 12, 8};
         for (int turn = 1; turn <= 18; turn++) {
             game.startTurn();
+            equal(true, game.waitHost().isSuccess(), "Explicit Host skip");
             equal((turn - 1) / 3 + 1, r.getCustomers().size(), "Exact arrival schedule");
             for (Customer c : r.getCustomers()) {
                 equal(types[c.getId() - 1], c.getCustomerType(), "Arrival type");
@@ -75,6 +77,7 @@ public class Stage2IntegrationTest {
                         "Pre-resolution satisfaction for " + c.getCustomerType());
                 GameController game = game(r);
                 game.startTurn();
+                equal(true, game.waitHost().isSuccess(), "Explicit Host skip");
                 game.waitWaiter();
                 game.waitChef();
                 game.finishTurn();
@@ -85,7 +88,8 @@ public class Stage2IntegrationTest {
                     equal(OrderStatus.CANCELLED, c.getOrder().getStatus(), "Cancel unserved order");
                     equal(true, r.getTables().get(0).isAvailable(), "Release table");
                 }
-                game.startTurn(); game.waitWaiter(); game.waitChef(); game.finishTurn();
+                game.startTurn();
+                equal(true, game.waitHost().isSuccess(), "Explicit Host skip"); game.waitWaiter(); game.waitChef(); game.finishTurn();
                 equal(1, r.getAbandonedCount(), "No repeated abandonment");
             }
         }
@@ -102,6 +106,7 @@ public class Stage2IntegrationTest {
         int[] bills = {900, 1350, 1800, 2430, 2430};
         for (int turn = 1; turn <= 18; turn++) {
             game.startTurn();
+            equal(true, game.waitHost().isSuccess(), "Explicit Host skip");
             for (int choice = 0; choice < 2; choice++) {
                 String[] p = commands.get((turn - 1) * 2 + choice).split(" ");
                 ActionResult result = switch (p[0]) {
@@ -156,7 +161,7 @@ public class Stage2IntegrationTest {
     }
 
     private static GameController game(Restaurant r) {
-        return new GameController(r, new TurnManager(new Cashier()), new Waiter(), new Chef());
+        return new GameController(r, new TurnManager(new Cashier()), new Host(), new Waiter(), new Chef());
     }
 
     private static void equal(Object expected, Object actual, String message) {

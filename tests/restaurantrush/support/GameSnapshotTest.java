@@ -66,6 +66,8 @@ public class GameSnapshotTest {
         availability(initial, false, false);
 
         manager.beginTurn(restaurant);
+        availability(GameSnapshot.from(restaurant, manager), false, false);
+        manager.recordHostTask();
         GameSnapshot start = GameSnapshot.from(restaurant, manager);
         availability(start, true, false);
         equal(List.of(1), start.waitingCustomerIds(), "Arrival is visible");
@@ -87,6 +89,8 @@ public class GameSnapshotTest {
 
         for (int turn = 2; turn <= 18; turn++) {
             manager.beginTurn(restaurant);
+            availability(GameSnapshot.from(restaurant, manager), false, false);
+            manager.recordHostTask();
             manager.recordWaiterTask();
             manager.recordChefTask();
             manager.resolveTurn(restaurant);
