@@ -5,6 +5,7 @@ import restaurantrush.control.GameController;
 import restaurantrush.control.TurnManager;
 import restaurantrush.staff.Cashier;
 import restaurantrush.staff.Chef;
+import restaurantrush.staff.Host;
 import restaurantrush.staff.Waiter;
 import restaurantrush.support.ActionResult;
 import restaurantrush.support.GameSnapshot;
@@ -50,20 +51,23 @@ public class ComboMealTest {
     private static void testServingRequiresThreeChefActions() {
         Restaurant restaurant = new Restaurant();
         TurnManager manager = new TurnManager(new Cashier());
-        GameController game = new GameController(restaurant, manager, new Waiter(), new Chef());
+        GameController game = new GameController(restaurant, manager, new Host(), new Waiter(), new Chef());
         // Customer 4 arrives on turn 10 and selects the fourth menu item (the combo).
         for (int turn = 1; turn < 10; turn++) {
             game.startTurn();
+            succeed(game.waitHost());
             succeed(game.waitWaiter());
             succeed(game.waitChef());
             game.finishTurn();
         }
         game.startTurn();
+        succeed(game.waitHost());
         succeed(game.seatCustomer(4, 1));
         succeed(game.waitChef());
         game.finishTurn();
 
         game.startTurn(); // Turn 11: take the order and complete preparation unit 1.
+        succeed(game.waitHost());
         succeed(game.takeOrder(4));
         Customer customer = restaurant.findCustomer(4);
         Order order = customer.getOrder();
@@ -74,11 +78,13 @@ public class ComboMealTest {
         game.finishTurn();
 
         game.startTurn(); // Turn 12: preparation unit 2.
+        succeed(game.waitHost());
         succeed(game.waitWaiter());
         succeed(game.prepareOrder(4));
         game.finishTurn();
 
         game.startTurn(); // Turn 13: serving is too early; one unit is still needed.
+        succeed(game.waitHost());
         equal(OrderStatus.PREPARING, order.getStatus(), "Two actions do not finish the combo");
         equal(1, order.getRemainingUnits(), "One preparation unit remains");
         GameSnapshot before = game.getSnapshot();
@@ -98,6 +104,7 @@ public class ComboMealTest {
         game.finishTurn();
 
         game.startTurn(); // Turn 14: the READY combo can now be served.
+        succeed(game.waitHost());
         equal(14, manager.getCurrentTurn(), "Serve on the next turn");
         succeed(game.serveOrder(4));
         equal(OrderStatus.SERVED, order.getStatus(), "Order is served");

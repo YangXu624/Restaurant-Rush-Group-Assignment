@@ -3,6 +3,7 @@ package restaurantrush.control;
 import restaurantrush.entity.Restaurant;
 import restaurantrush.entity.Order;
 import restaurantrush.staff.Chef;
+import restaurantrush.staff.Host;
 import restaurantrush.staff.Waiter;
 import restaurantrush.support.ActionResult;
 import restaurantrush.support.GameSnapshot;
@@ -18,21 +19,42 @@ public class GameController {
 
     private final Restaurant restaurant;
     private final TurnManager turnManager;
+    private final Host host;
     private final Waiter waiter;
     private final Chef chef;
 
-    public GameController(Restaurant restaurant, TurnManager turnManager, Waiter waiter, Chef chef) {
-        if (restaurant == null || turnManager == null || waiter == null || chef == null) {
+    public GameController(Restaurant restaurant, TurnManager turnManager, Host host, Waiter waiter, Chef chef) {
+        if (restaurant == null || turnManager == null || host == null || waiter == null || chef == null) {
             throw new IllegalArgumentException("Game collaborators cannot be null");
         }
         this.restaurant = restaurant;
         this.turnManager = turnManager;
+        this.host = host;
         this.waiter = waiter;
         this.chef = chef;
     }
 
     public void startTurn() {
         turnManager.beginTurn(restaurant);
+    }
+
+    public ActionResult hostSeatCustomer(int customerId, int tableId) {
+        if (!turnManager.canAssignHost()) {
+            return ActionResult.fail("Host choice is unavailable.");
+        }
+        ActionResult result = host.seat(restaurant, customerId, tableId);
+        if (result.isSuccess()) {
+            turnManager.recordHostTask();
+        }
+        return result;
+    }
+
+    public ActionResult waitHost() {
+        if (!turnManager.canAssignHost()) {
+            return ActionResult.fail("Host choice is unavailable.");
+        }
+        turnManager.recordHostTask();
+        return ActionResult.ok("Host waits.");
     }
 
     public ActionResult seatCustomer(int customerId, int tableId) {

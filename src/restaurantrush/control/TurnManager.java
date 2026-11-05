@@ -13,6 +13,7 @@ public class TurnManager {
     private static final int ARRIVAL_INTERVAL = 3;
 
     private int currentTurn = 1;
+    private boolean hostTaskUsed = false;
     private boolean waiterTaskUsed = false;
     private boolean chefTaskUsed = false;
     private boolean turnStarted = false;
@@ -44,18 +45,30 @@ public class TurnManager {
             };
             r.addArrival(arrival);
         }
+        hostTaskUsed = false;
         waiterTaskUsed = false;
         chefTaskUsed = false;
         turnResolved = false;
         turnStarted = true;
     }
 
+    public boolean canAssignHost() {
+        return turnStarted && !turnResolved && !finished && !hostTaskUsed;
+    }
+
+    public void recordHostTask() {
+        if (!canAssignHost()) {
+            throw new IllegalStateException("Host choice is unavailable");
+        }
+        hostTaskUsed = true;
+    }
+
     public boolean canAssignWaiter() {
-        return turnStarted && !turnResolved && !finished && !waiterTaskUsed;
+        return turnStarted && !turnResolved && !finished && hostTaskUsed && !waiterTaskUsed;
     }
 
     public boolean canAssignChef() {
-        return turnStarted && !turnResolved && !finished && waiterTaskUsed && !chefTaskUsed;
+        return turnStarted && !turnResolved && !finished && hostTaskUsed && waiterTaskUsed && !chefTaskUsed;
     }
 
     public void recordWaiterTask() {
@@ -78,12 +91,12 @@ public class TurnManager {
      * and retrying a failed resolution is not guaranteed safe.
      *
      * @throws IllegalArgumentException if the restaurant is null
-     * @throws IllegalStateException unless both choices in an active turn are used
+     * @throws IllegalStateException unless all three choices in an active turn are used
      */
     public void resolveTurn(Restaurant r) {
         requireRestaurant(r);
-        if (!turnStarted || turnResolved || finished || !waiterTaskUsed || !chefTaskUsed) {
-            throw new IllegalStateException("Turn resolution requires both staff choices in an active turn");
+        if (!turnStarted || turnResolved || finished || !hostTaskUsed || !waiterTaskUsed || !chefTaskUsed) {
+            throw new IllegalStateException("Turn resolution requires all three staff choices in an active turn");
         }
         for (Customer customer : r.getActiveCustomers()) {
             customer.finishEating(currentTurn);

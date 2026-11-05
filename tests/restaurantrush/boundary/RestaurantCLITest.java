@@ -14,6 +14,7 @@ import restaurantrush.entity.OrderStatus;
 import restaurantrush.entity.Restaurant;
 import restaurantrush.staff.Cashier;
 import restaurantrush.staff.Chef;
+import restaurantrush.staff.Host;
 import restaurantrush.staff.Waiter;
 import restaurantrush.support.CustomerView;
 import restaurantrush.support.GameSnapshot;
@@ -149,7 +150,7 @@ public class RestaurantCLITest {
         Fixture(String commands) {
             input = new Scanner(commands);
             GameController controller = new GameController(new Restaurant(),
-                    new TurnManager(new Cashier()), new Waiter(), new Chef());
+                    new TurnManager(new Cashier()), new Host(), new Waiter(), new Chef());
             cli = new RestaurantCLI(controller, input, new PrintStream(bytes, true, StandardCharsets.UTF_8));
         }
 

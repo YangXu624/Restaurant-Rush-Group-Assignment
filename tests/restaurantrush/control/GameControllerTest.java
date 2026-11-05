@@ -6,6 +6,7 @@ import restaurantrush.entity.Order;
 import restaurantrush.entity.Restaurant;
 import restaurantrush.staff.Cashier;
 import restaurantrush.staff.Chef;
+import restaurantrush.staff.Host;
 import restaurantrush.staff.Waiter;
 import restaurantrush.support.ActionResult;
 
@@ -30,16 +31,17 @@ public class GameControllerTest {
 
     private static void testConstructorNulls() {
         Fixture f = new Fixture();
-        expectIllegalArgument(() -> new GameController(null, f.manager, f.waiter, f.chef));
-        expectIllegalArgument(() -> new GameController(f.restaurant, null, f.waiter, f.chef));
-        expectIllegalArgument(() -> new GameController(f.restaurant, f.manager, null, f.chef));
-        expectIllegalArgument(() -> new GameController(f.restaurant, f.manager, f.waiter, null));
+        expectIllegalArgument(() -> new GameController(null, f.manager, new Host(), f.waiter, f.chef));
+        expectIllegalArgument(() -> new GameController(f.restaurant, null, new Host(), f.waiter, f.chef));
+        expectIllegalArgument(() -> new GameController(f.restaurant, f.manager, new Host(), null, f.chef));
+        expectIllegalArgument(() -> new GameController(f.restaurant, f.manager, new Host(), f.waiter, null));
     }
 
     private static void testStartAndFinishWithSharedState() {
         Fixture f = new Fixture();
         equal(false, f.controller.isFinished(), "Initially unfinished");
         f.controller.startTurn();
+        equal(true, f.controller.waitHost().isSuccess(), "Explicit Host skip");
         equal(1, f.restaurant.getCustomers().size(), "Start adds arrival to supplied restaurant");
         equal(true, f.manager.canAssignWaiter(), "Supplied manager starts");
         f.manager.recordWaiterTask();
@@ -52,6 +54,7 @@ public class GameControllerTest {
         equal(2, f.manager.getCurrentTurn(), "Advance after resolution");
         equal(false, f.manager.canAssignWaiter(), "Advanced turn is closed");
         f.controller.startTurn();
+        equal(true, f.controller.waitHost().isSuccess(), "Explicit Host skip");
         equal(true, f.manager.canAssignWaiter(), "Same manager begins next turn");
         equal(1, f.restaurant.getCustomers().size(), "No extra arrival on turn two");
     }
@@ -62,10 +65,12 @@ public class GameControllerTest {
                 Fixture f = new Fixture();
                 // Exercise a noninitial service turn using the real manager.
                 f.controller.startTurn();
+                equal(true, f.controller.waitHost().isSuccess(), "Explicit Host skip");
                 f.manager.recordWaiterTask();
                 f.manager.recordChefTask();
                 f.controller.finishTurn();
                 f.controller.startTurn();
+                equal(true, f.controller.waitHost().isSuccess(), "Explicit Host skip");
                 f.waiter.result = success ? ActionResult.ok("Staff test result") : ActionResult.fail("Staff test result");
                 ActionResult actual = switch (operation) {
                     case "seat" -> f.controller.seatCustomer(37, 2);
@@ -95,6 +100,7 @@ public class GameControllerTest {
         for (boolean success : new boolean[] {false, true}) {
             Fixture f = new Fixture();
             f.controller.startTurn();
+            equal(true, f.controller.waitHost().isSuccess(), "Explicit Host skip");
             Customer customer = f.restaurant.findCustomer(1);
             // Set up the registered order directly to isolate controller forwarding from seating.
             customer.seat();
@@ -116,6 +122,7 @@ public class GameControllerTest {
     private static void testResolutionFailure() {
         Fixture f = new Fixture();
         f.controller.startTurn();
+        equal(true, f.controller.waitHost().isSuccess(), "Explicit Host skip");
         f.manager.recordWaiterTask();
         f.manager.recordChefTask();
         IllegalStateException failure = new IllegalStateException("Cashier failed");
@@ -131,6 +138,7 @@ public class GameControllerTest {
     private static void testStaffExceptionsPropagate() {
         Fixture f = new Fixture();
         f.controller.startTurn();
+        equal(true, f.controller.waitHost().isSuccess(), "Explicit Host skip");
         IllegalStateException failure = new IllegalStateException("Staff programming defect");
         f.waiter.failure = failure;
         expectSameFailure(failure, () -> f.controller.seatCustomer(1, 1));
@@ -142,9 +150,10 @@ public class GameControllerTest {
     private static void testCompletionAndVictory() {
         StatisticsRestaurant restaurant = new StatisticsRestaurant();
         TurnManager manager = new TurnManager(new RecordingCashier());
-        GameController controller = new GameController(restaurant, manager, new Waiter(), new Chef());
+        GameController controller = new GameController(restaurant, manager, new Host(), new Waiter(), new Chef());
         for (int turn = 1; turn <= 18; turn++) {
             controller.startTurn();
+            equal(true, controller.waitHost().isSuccess(), "Explicit Host skip");
             equal(false, controller.isFinished(), "Game remains active through turn 18");
             equal(false, controller.isVictory(), "Meeting thresholds during play is not victory");
             manager.recordWaiterTask();
@@ -175,7 +184,7 @@ public class GameControllerTest {
         final TurnManager manager = new TurnManager(cashier);
         final RecordingWaiter waiter = new RecordingWaiter();
         final RecordingChef chef = new RecordingChef();
-        final GameController controller = new GameController(restaurant, manager, waiter, chef);
+        final GameController controller = new GameController(restaurant, manager, new Host(), waiter, chef);
     }
 
     private static final class RecordingWaiter extends Waiter {
