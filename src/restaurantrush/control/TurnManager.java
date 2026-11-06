@@ -8,7 +8,7 @@ import restaurantrush.entity.VIPCustomer;
 import restaurantrush.staff.Cashier;
 import restaurantrush.support.ActionResult;
 
-/** Owns Stage 2 turn sequencing and automatic events. Owner: M4: Nickolas. */
+/** Owns turn sequencing and automatic events. Owner: M4: Nickolas. */
 public class TurnManager {
     private static final int LAST_TURN = 18;
     private static final int ARRIVAL_INTERVAL = 3;

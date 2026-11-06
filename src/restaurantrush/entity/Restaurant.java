@@ -295,11 +295,12 @@ public class Restaurant {
         return (double) paidSatisfactionTotal / paidCount;
     }
 
-    /** Returns a read-only list of customers still in the restaurant, in arrival order. */
+    /** Returns the promotion shared by the turn manager and waiter. */
     public HappyHour getHappyHour() {
         return happyHour;
     }
 
+    /** Returns a read-only list of customers still in the restaurant, in arrival order. */
     public List<Customer> getActiveCustomers() {
         List<Customer> active = new ArrayList<>();
         for (Customer c : customers) {
