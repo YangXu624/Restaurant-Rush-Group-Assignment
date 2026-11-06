@@ -16,6 +16,22 @@ import restaurantrush.support.TableView;
  * <p>Owner: M5: Toshiki. See docs/class-contracts.md for the contract.
  */
 public class RestaurantCLI {
+    /** Each player prompt, in turn order, with the commands it accepts. */
+    private enum Role {
+        MANAGER("Manager", "happy or wait"),
+        HOST("Host", "seat <customerId> <tableId> or wait"),
+        WAITER("Waiter", "seat <customerId> <tableId>, order <customerId>, serve <customerId>, or wait"),
+        CHEF("Chef", "cook <customerId> or wait");
+
+        final String label;
+        final String usage;
+
+        Role(String label, String usage) {
+            this.label = label;
+            this.usage = usage;
+        }
+    }
+
     private final GameController controller;
     private final Scanner input;
     private final PrintStream output;
@@ -33,13 +49,10 @@ public class RestaurantCLI {
     public void run() {
         while (!controller.isFinished()) {
             controller.startTurn();
-            // Temporary bridge until interactive Host choices are added.
-            if (!controller.waitHost().isSuccess()) {
-                throw new IllegalStateException("Host skip failed at the start of the turn");
-            }
             GameSnapshot start = controller.getSnapshot();
             displayState(start);
-            if (!chooseTask(true) || !chooseTask(false)) {
+            if (!chooseHappyHour() || !chooseTask(Role.HOST) || !chooseTask(Role.WAITER)
+                    || !chooseTask(Role.CHEF)) {
                 showFeedback("Input ended. The current turn was not completed.");
                 return;
             }
@@ -80,21 +93,38 @@ public class RestaurantCLI {
                             : String.format(Locale.ROOT, "$%d.%02d",
                                     customer.billCents() / 100, customer.billCents() % 100)));
         }
-        output.println("Waiter: " + (snapshot.waiterAvailable() ? "available" : "unavailable"));
+        output.println("Happy Hour: " + (snapshot.happyHourTurnsRemaining() > 0
+                ? "active, " + snapshot.happyHourTurnsRemaining() + " turn(s) remaining"
+                : snapshot.happyHourAvailable() ? "available" : "unavailable"));
+        output.println("Host: " + (snapshot.hostAvailable() ? "available" : "unavailable"));
+        String waiterAvailability = snapshot.waiterAvailable() ? "available"
+                : snapshot.hostAvailable() ? "available after the Host chooses" : "unavailable";
+        output.println("Waiter: " + waiterAvailability);
         String chefAvailability = snapshot.chefAvailable() ? "available"
-                : snapshot.waiterAvailable() ? "available after the Waiter chooses" : "unavailable";
+                : snapshot.hostAvailable() || snapshot.waiterAvailable()
+                        ? "available after the Waiter chooses" : "unavailable";
         output.println("Chef: " + chefAvailability);
         output.flush();
     }
 
     /** Returns a normalized valid command, or null at end of input. */
+    public String readManagerChoice() {
+        return readChoice(Role.MANAGER);
+    }
+
+    /** Returns a normalized valid command, or null at end of input. */
+    public String readHostChoice() {
+        return readChoice(Role.HOST);
+    }
+
+    /** Returns a normalized valid command, or null at end of input. */
     public String readWaiterChoice() {
-        return readChoice(true);
+        return readChoice(Role.WAITER);
     }
 
     /** Returns a normalized valid command, or null at end of input. */
     public String readChefChoice() {
-        return readChoice(false);
+        return readChoice(Role.CHEF);
     }
 
     public void showFeedback(String message) {
@@ -102,12 +132,10 @@ public class RestaurantCLI {
         output.flush();
     }
 
-    private String readChoice(boolean waiter) {
-        String usage = waiter
-                ? "seat <customerId> <tableId>, order <customerId>, serve <customerId>, or wait"
-                : "cook <customerId> or wait";
+    private String readChoice(Role role) {
+        String usage = role.usage;
         while (true) {
-            output.print((waiter ? "Waiter" : "Chef") + " (" + usage + ")> ");
+            output.print(role.label + " (" + usage + ")> ");
             output.flush();
             if (!input.hasNextLine()) {
                 return null;
@@ -119,13 +147,7 @@ public class RestaurantCLI {
             }
             String[] parts = line.split("\\s+");
             parts[0] = parts[0].toLowerCase(Locale.ROOT);
-            int expectedParts = switch (parts[0]) {
-                case "wait" -> 1;
-                case "seat" -> waiter ? 3 : -1;
-                case "order", "serve" -> waiter ? 2 : -1;
-                case "cook" -> waiter ? -1 : 2;
-                default -> -1;
-            };
+            int expectedParts = expectedParts(role, parts[0]);
             if (parts.length != expectedParts) {
                 showFeedback("Invalid command. Use " + usage + ".");
                 continue;
@@ -154,31 +176,66 @@ public class RestaurantCLI {
         output.flush();
     }
 
-    private boolean chooseTask(boolean waiter) {
+    /** Returns how many words the role's command takes, or -1 if the role cannot use it. */
+    private static int expectedParts(Role role, String command) {
+        return switch (command) {
+            case "wait" -> 1;
+            case "happy" -> role == Role.MANAGER ? 1 : -1;
+            case "seat" -> role == Role.HOST || role == Role.WAITER ? 3 : -1;
+            case "order", "serve" -> role == Role.WAITER ? 2 : -1;
+            case "cook" -> role == Role.CHEF ? 2 : -1;
+            default -> -1;
+        };
+    }
+
+    /** Offers the promotion only while it can be activated; returns false at end of input. */
+    private boolean chooseHappyHour() {
+        if (!controller.canActivateHappyHour()) {
+            return true;
+        }
+        String command = readManagerChoice();
+        if (command == null) {
+            return false;
+        }
+        if (command.equals("happy")) {
+            showFeedback(controller.activateHappyHour().getMessage());
+            // Recovery has just changed satisfaction, so show the updated state.
+            displayState(controller.getSnapshot());
+        } else {
+            showFeedback("Happy Hour stays off.");
+        }
+        return true;
+    }
+
+    private boolean chooseTask(Role role) {
         while (true) {
-            String command = waiter ? readWaiterChoice() : readChefChoice();
+            String command = readChoice(role);
             if (command == null) {
                 return false;
             }
-            String[] parts = command.split(" ");
-            ActionResult result;
-            if (waiter) {
-                result = switch (parts[0]) {
-                    case "seat" -> controller.seatCustomer(Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
-                    case "order" -> controller.takeOrder(Integer.parseInt(parts[1]));
-                    case "serve" -> controller.serveOrder(Integer.parseInt(parts[1]));
-                    case "wait" -> controller.waitWaiter();
-                    default -> throw new IllegalStateException("Unexpected parsed Waiter command");
-                };
-            } else {
-                result = parts[0].equals("wait") ? controller.waitChef()
-                        : controller.prepareOrder(Integer.parseInt(parts[1]));
-            }
+            ActionResult result = perform(role, command.split(" "));
             showFeedback(result.getMessage());
             if (result.isSuccess()) {
                 return true;
             }
         }
+    }
+
+    private ActionResult perform(Role role, String[] parts) {
+        return switch (role) {
+            case HOST -> parts[0].equals("wait") ? controller.waitHost()
+                    : controller.hostSeatCustomer(Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+            case WAITER -> switch (parts[0]) {
+                case "seat" -> controller.seatCustomer(Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+                case "order" -> controller.takeOrder(Integer.parseInt(parts[1]));
+                case "serve" -> controller.serveOrder(Integer.parseInt(parts[1]));
+                case "wait" -> controller.waitWaiter();
+                default -> throw new IllegalStateException("Unexpected parsed Waiter command");
+            };
+            case CHEF -> parts[0].equals("wait") ? controller.waitChef()
+                    : controller.prepareOrder(Integer.parseInt(parts[1]));
+            case MANAGER -> throw new IllegalStateException("The manager's choice is not a staff task");
+        };
     }
 
     private void displayStatistics(GameSnapshot snapshot) {

@@ -23,6 +23,7 @@ import restaurantrush.support.TableView;
 /** Input and rendering tests only; controller actions and the turn loop are separate work. */
 public class RestaurantCLITest {
     public static void main(String[] args) {
+        testManagerAndHostCommands();
         testWaiterCommands();
         testChefCommands();
         testInvalidInputRetries();
@@ -31,6 +32,30 @@ public class RestaurantCLITest {
         testDetailedDisplayAndLocale();
         testAvailabilityAndFeedback();
         System.out.println("All RestaurantCLI input/display tests passed successfully!");
+    }
+
+    private static void testManagerAndHostCommands() {
+        Fixture manager = new Fixture("  HAPPY \nwait\n");
+        equal("happy", manager.cli.readManagerChoice(), "Manager activation grammar");
+        equal("wait", manager.cli.readManagerChoice(), "Manager decline grammar");
+        equal(null, manager.cli.readManagerChoice(), "EOF at Manager prompt");
+        for (String invalid : new String[] {"happy now", "wait extra", "seat 1 1", "cook 1", "dance"}) {
+            Fixture f = new Fixture(invalid + "\nwait\n");
+            equal("wait", f.cli.readManagerChoice(), "Retry invalid Manager input: " + invalid);
+            contains(f.text(), "Invalid command");
+        }
+        Fixture host = new Fixture(" SEAT 01\t2 \nwait\n");
+        equal("seat 1 2", host.cli.readHostChoice(), "Host seating grammar");
+        equal("wait", host.cli.readHostChoice(), "Host wait grammar");
+        equal(null, host.cli.readHostChoice(), "EOF at Host prompt");
+        for (String invalid : new String[] {"happy", "order 1", "serve 1", "cook 1", "seat 1", "seat 1 2 3"}) {
+            Fixture f = new Fixture(invalid + "\nwait\n");
+            equal("wait", f.cli.readHostChoice(), "Retry invalid Host input: " + invalid);
+            contains(f.text(), "Invalid command");
+        }
+        Fixture badId = new Fixture("seat x 1\nwait\n");
+        equal("wait", badId.cli.readHostChoice(), "Retry invalid Host ID");
+        contains(badId.text(), "IDs must be whole numbers");
     }
 
     private static void testWaiterCommands() {
@@ -51,7 +76,7 @@ public class RestaurantCLITest {
     }
 
     private static void testInvalidInputRetries() {
-        String[] badWaiter = {"", "dance", "cook 1", "seat 1", "seat 1 2 extra",
+        String[] badWaiter = {"", "dance", "cook 1", "happy", "seat 1", "seat 1 2 extra",
                 "order", "order 1 extra", "serve", "serve 1 extra", "wait extra"};
         for (String invalid : badWaiter) {
             Fixture f = new Fixture(invalid + "\nseat 1 2\n");
@@ -63,7 +88,7 @@ public class RestaurantCLITest {
             equal("wait", f.cli.readWaiterChoice(), "Retry invalid Waiter ID: " + invalid);
             contains(f.text(), "IDs must be whole numbers");
         }
-        for (String invalid : new String[] {"seat 1 2", "order 1", "serve 1", "cook", "cook 1 extra"}) {
+        for (String invalid : new String[] {"seat 1 2", "order 1", "serve 1", "cook", "cook 1 extra", "happy"}) {
             Fixture f = new Fixture(invalid + "\nwait\n");
             equal("wait", f.cli.readChefChoice(), "Retry invalid Chef input: " + invalid);
             contains(f.text(), "Invalid command");
@@ -98,10 +123,11 @@ public class RestaurantCLITest {
     private static void testEmptyDisplay() {
         Fixture f = new Fixture("");
         f.cli.displayState(new GameSnapshot(1, 0, null, List.of(), List.of(),
-                List.of(new TableView(1, null), new TableView(2, null)), true, false, 0, 0, 0));
+                List.of(new TableView(1, null), new TableView(2, null)), true, false, false, 0, 0, 0, true, 0));
         for (String expected : new String[] {"Turn 1", "Revenue: $0.00", "Average paid satisfaction: N/A",
                 "Waiting queue: empty", "Table 1: free", "Table 2: free", "Customers:\n  none",
-                "Waiter: available", "Chef: available after the Waiter chooses"}) {
+                "Happy Hour: available", "Host: available", "Waiter: available after the Host chooses",
+                "Chef: available after the Waiter chooses"}) {
             contains(f.text(), expected);
         }
     }
@@ -111,7 +137,7 @@ public class RestaurantCLITest {
         GameSnapshot snapshot = new GameSnapshot(7, 4205, 260.0 / 3, List.of(4, 2),
                 List.of(new CustomerView(3, 76, CustomerStatus.SEATED, OrderStatus.PREPARING, "Pasta", 1, 2, "Regular", 1800),
                         new CustomerView(1, 84, CustomerStatus.PAID, OrderStatus.PAID, "Salad", 0, null, "Regular", 900)),
-                List.of(new TableView(1, null), new TableView(2, 3)), false, true, 1, 2, 1);
+                List.of(new TableView(1, null), new TableView(2, 3)), false, false, true, 1, 2, 1, false, 1);
         Locale original = Locale.getDefault();
         try {
             Locale.setDefault(Locale.GERMANY);
@@ -124,6 +150,7 @@ public class RestaurantCLITest {
                 "Table 2: customer 3", "Customer 3 | satisfaction 76 | SEATED | table 2 | order: Pasta | PREPARING | 1 unit(s) remaining",
                 "Customer 1 | satisfaction 84 | PAID | table none | order: Salad | PAID | 0 unit(s) remaining",
                 "Type: Regular | Locked bill: $18.00", "Type: Regular | Locked bill: $9.00",
+                "Happy Hour: active, 1 turn(s) remaining", "Host: unavailable",
                 "Waiter: unavailable", "Chef: available"}) {
             contains(f.text(), expected);
         }
@@ -133,9 +160,11 @@ public class RestaurantCLITest {
         Fixture f = new Fixture("");
         f.cli.displayState(new GameSnapshot(18, 0, null, List.of(1),
                 List.of(new CustomerView(1, 100, CustomerStatus.WAITING, null, null, null, null, "Regular", null)),
-                List.of(new TableView(1, null)), false, false, 0, 0, 0));
+                List.of(new TableView(1, null)), false, false, false, 0, 0, 0, false, 0));
         contains(f.text(), "WAITING | table none | order: none");
         contains(f.text(), "Type: Regular | Locked bill: none");
+        contains(f.text(), "Happy Hour: unavailable");
+        contains(f.text(), "Host: unavailable");
         contains(f.text(), "Waiter: unavailable");
         contains(f.text(), "Chef: unavailable");
         f.cli.showFeedback("Customer has not arrived.");

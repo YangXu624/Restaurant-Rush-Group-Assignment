@@ -28,11 +28,14 @@ public record GameSnapshot(
         List<Integer> waitingCustomerIds,
         List<CustomerView> customers,
         List<TableView> tables,
+        boolean hostAvailable,
         boolean waiterAvailable,
         boolean chefAvailable,
         int paidCount,
         int servedCount,
-        int abandonedCount) {
+        int abandonedCount,
+        boolean happyHourAvailable,
+        int happyHourTurnsRemaining) {
 
     /**
      * Copies lists even when the caller constructs the record directly.
@@ -88,7 +91,8 @@ public record GameSnapshot(
         return new GameSnapshot(t.getCurrentTurn(), r.getRevenueCents(),
                 paidCount == 0 ? null : r.averagePaidSatisfaction(),
                 waitingIds, customerViews, tableViews,
-                t.canAssignWaiter(), t.canAssignChef(), paidCount,
-                r.getServedCount(), r.getAbandonedCount());
+                t.canAssignHost(), t.canAssignWaiter(), t.canAssignChef(), paidCount,
+                r.getServedCount(), r.getAbandonedCount(),
+                t.canActivateHappyHour(r), r.getHappyHour().getTurnsRemaining());
     }
 }

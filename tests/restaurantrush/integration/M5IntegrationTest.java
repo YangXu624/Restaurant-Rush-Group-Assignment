@@ -102,6 +102,8 @@ public class M5IntegrationTest {
     private static void testInvalidInput(Result invalid, Result clean) {
         complete(invalid, true);
         equal(clean.state(), invalid.state(), "Invalid attempts change no state, timing or final result");
+        contains(invalid.text(), "Invalid command. Use happy or wait.");
+        contains(invalid.text(), "Invalid command. Use seat <customerId> <tableId> or wait.");
         contains(invalid.text(), "Invalid command.");
         equal(2, occurrences(invalid.text(), "IDs must be whole numbers"), "Malformed ID and overflow both rejected");
         contains(invalid.text(), "Customer 99 has not arrived.");
@@ -126,6 +128,7 @@ public class M5IntegrationTest {
         equal(false, result.won(), "EOF is not victory");
         equal(1, result.state().turn(), "Incomplete turn does not advance");
         equal(100, result.state().customers().get(0).satisfaction(), "No automatic penalty for incomplete turn");
+        equal(false, result.state().hostAvailable(), "Host has already chosen");
         equal(!waiterActed, result.state().waiterAvailable(), "EOF preserves Waiter choice");
         equal(waiterActed, result.state().chefAvailable(), "EOF preserves Chef choice");
         equal(waiterActed ? CustomerStatus.SEATED : CustomerStatus.WAITING,
@@ -140,6 +143,7 @@ public class M5IntegrationTest {
         equal(true, result.finished(), "Fixture completes game");
         equal(won, result.won(), "Controller decides outcome");
         equal(18, result.state().turn(), "All 18 turns played");
+        equal(false, result.state().hostAvailable(), "No Host after completion");
         equal(false, result.state().waiterAvailable(), "No Waiter after completion");
         equal(false, result.state().chefAvailable(), "No Chef after completion");
         equal(18, occurrences(result.text(), "End of turn "), "Exactly 18 turn completions");

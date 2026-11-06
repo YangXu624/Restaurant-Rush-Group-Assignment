@@ -1,3 +1,8 @@
+happy now
+wait
+order 1
+seat 99 1
+wait
 dance
 seat nope 1
 seat 99 1
@@ -5,43 +10,77 @@ order 1
 seat 1 1
 cook 1
 wait
+wait
+wait
 order 1
 cook 2147483648
 cook 99
 cook 1
+wait
+wait
 order 1
 seat 1 2
 serve 2
 serve 1
 cook 1
 wait
+wait
+wait
 seat 2 2
+wait
+wait
 wait
 order 2
 cook 2
+wait
+wait
 serve 2
 wait
+wait
+wait
 seat 3 1
+wait
+wait
 wait
 order 3
 cook 3
 wait
+wait
+wait
 cook 3
+wait
+wait
 serve 3
+wait
+wait
 wait
 seat 4 2
 wait
+wait
+wait
 order 4
 cook 4
+wait
+wait
 seat 5 1
 cook 4
+wait
+wait
 order 5
 cook 4
+wait
+wait
 serve 4
 cook 5
 wait
-cook 5
+wait
 wait
 cook 5
+wait
+wait
+wait
+cook 5
+wait
+wait
 serve 5
 wait
