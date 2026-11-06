@@ -7,6 +7,9 @@ import java.util.List;
  * See docs/class-contracts.md for the implementation contract.
  */
 public class Customer {
+    private static final int MAX_SATISFACTION = 100;
+    private static final int HAPPY_HOUR_RECOVERY = 15;
+
     private final int id;
     private int satisfaction;
     private CustomerStatus status;
@@ -19,7 +22,7 @@ public class Customer {
             throw new IllegalArgumentException("Customer ID must be positive: " + id);
         }
         this.id = id;
-        this.satisfaction = 100;
+        this.satisfaction = MAX_SATISFACTION;
         this.status = CustomerStatus.WAITING;
         this.servedTurn = -1;
         this.readyToPayTurn = -1;
@@ -107,6 +110,13 @@ public class Customer {
     /** Subclasses vary the amount while sharing the lifecycle guard and zero clamp. */
     protected int waitingPenaltyPerTurn() {
         return 8;
+    }
+
+    /** Brief 4.3: only customers still waiting for a table or food recover. */
+    public void recoverSatisfaction() {
+        if (status == CustomerStatus.WAITING || status == CustomerStatus.SEATED) {
+            satisfaction = Math.min(MAX_SATISFACTION, satisfaction + HAPPY_HOUR_RECOVERY);
+        }
     }
 
     public void markPaid() {

@@ -14,6 +14,7 @@ public class CustomerTest {
         testServingPreconditions();
         testWaitingPenaltyBoundaries();
         testOverriddenWaitingPenalty();
+        testHappyHourRecovery();
         testAbandonmentWithoutOrder();
         testAbandonmentCancelsSharedOrder();
         testFailedCancellationIsAtomic();
@@ -262,6 +263,38 @@ public class CustomerTest {
         order.markPaid();
         served.markPaid();
         assertNoChange(served, served::applyWaitingPenalty, "Override preserves paid status guard");
+    }
+
+    private static void testHappyHourRecovery() {
+        Customer waiting = new Customer(1);
+        waiting.applyWaitingPenalty();
+        assertEqual(92, waiting.getSatisfaction(), "Regular loses 8 while waiting");
+        waiting.recoverSatisfaction();
+        assertEqual(100, waiting.getSatisfaction(), "92 recovers to the 100 cap");
+        waiting.recoverSatisfaction();
+        assertEqual(100, waiting.getSatisfaction(), "Already at the cap");
+
+        Customer seated = new Customer(1);
+        for (int i = 0; i < 5; i++) {
+            seated.applyWaitingPenalty();
+        }
+        seated.seat();
+        seated.recoverSatisfaction();
+        assertEqual(75, seated.getSatisfaction(), "Seated customer recovers the full 15");
+
+        Order order = new Order(1, new MenuItem("Salad", 900, 1));
+        seated.acceptOrder(order);
+        seated.recoverSatisfaction();
+        assertEqual(90, seated.getSatisfaction(), "Still waiting for food after ordering");
+        order.prepareOneUnit();
+        order.markServed();
+        seated.markServed(1);
+        assertNoChange(seated, seated::recoverSatisfaction, "Served customer does not recover");
+
+        Customer departed = new Customer(2);
+        reduceSatisfactionToZero(departed);
+        departed.abandon();
+        assertNoChange(departed, departed::recoverSatisfaction, "Departed customer does not recover");
     }
 
     private static void testAbandonmentWithoutOrder() {
