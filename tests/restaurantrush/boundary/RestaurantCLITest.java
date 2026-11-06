@@ -36,43 +36,43 @@ public class RestaurantCLITest {
 
     private static void testManagerAndHostCommands() {
         Fixture manager = new Fixture("  HAPPY \nwait\n");
-        equal("happy", manager.cli.readManagerChoice(), "Manager activation grammar");
-        equal("wait", manager.cli.readManagerChoice(), "Manager decline grammar");
-        equal(null, manager.cli.readManagerChoice(), "EOF at Manager prompt");
+        equal("happy", manager.cli.readChoice(RestaurantCLI.Role.MANAGER), "Manager activation grammar");
+        equal("wait", manager.cli.readChoice(RestaurantCLI.Role.MANAGER), "Manager decline grammar");
+        equal(null, manager.cli.readChoice(RestaurantCLI.Role.MANAGER), "EOF at Manager prompt");
         for (String invalid : new String[] {"happy now", "wait extra", "seat 1 1", "cook 1", "dance"}) {
             Fixture f = new Fixture(invalid + "\nwait\n");
-            equal("wait", f.cli.readManagerChoice(), "Retry invalid Manager input: " + invalid);
+            equal("wait", f.cli.readChoice(RestaurantCLI.Role.MANAGER), "Retry invalid Manager input: " + invalid);
             contains(f.text(), "Invalid command");
         }
         Fixture host = new Fixture(" SEAT 01\t2 \nwait\n");
-        equal("seat 1 2", host.cli.readHostChoice(), "Host seating grammar");
-        equal("wait", host.cli.readHostChoice(), "Host wait grammar");
-        equal(null, host.cli.readHostChoice(), "EOF at Host prompt");
+        equal("seat 1 2", host.cli.readChoice(RestaurantCLI.Role.HOST), "Host seating grammar");
+        equal("wait", host.cli.readChoice(RestaurantCLI.Role.HOST), "Host wait grammar");
+        equal(null, host.cli.readChoice(RestaurantCLI.Role.HOST), "EOF at Host prompt");
         for (String invalid : new String[] {"happy", "order 1", "serve 1", "cook 1", "seat 1", "seat 1 2 3"}) {
             Fixture f = new Fixture(invalid + "\nwait\n");
-            equal("wait", f.cli.readHostChoice(), "Retry invalid Host input: " + invalid);
+            equal("wait", f.cli.readChoice(RestaurantCLI.Role.HOST), "Retry invalid Host input: " + invalid);
             contains(f.text(), "Invalid command");
         }
         Fixture badId = new Fixture("seat x 1\nwait\n");
-        equal("wait", badId.cli.readHostChoice(), "Retry invalid Host ID");
+        equal("wait", badId.cli.readChoice(RestaurantCLI.Role.HOST), "Retry invalid Host ID");
         contains(badId.text(), "IDs must be whole numbers");
     }
 
     private static void testWaiterCommands() {
         Fixture f = new Fixture("  SeAt  01\t+2  \norder 3\nserve 4\nWAIT\n");
-        equal("seat 1 2", f.cli.readWaiterChoice(), "Normalize command, whitespace and IDs");
-        equal("order 3", f.cli.readWaiterChoice(), "Order grammar");
-        equal("serve 4", f.cli.readWaiterChoice(), "Serve grammar");
-        equal("wait", f.cli.readWaiterChoice(), "Explicit wait");
+        equal("seat 1 2", f.cli.readChoice(RestaurantCLI.Role.WAITER), "Normalize command, whitespace and IDs");
+        equal("order 3", f.cli.readChoice(RestaurantCLI.Role.WAITER), "Order grammar");
+        equal("serve 4", f.cli.readChoice(RestaurantCLI.Role.WAITER), "Serve grammar");
+        equal("wait", f.cli.readChoice(RestaurantCLI.Role.WAITER), "Explicit wait");
         // Syntactically valid IDs reach domain validation later; no base ID limits in the parser.
         Fixture domainInput = new Fixture("seat -1 99\n");
-        equal("seat -1 99", domainInput.cli.readWaiterChoice(), "Do not implement domain validation");
+        equal("seat -1 99", domainInput.cli.readChoice(RestaurantCLI.Role.WAITER), "Do not implement domain validation");
     }
 
     private static void testChefCommands() {
         Fixture f = new Fixture(" COOK\t3 \nwait\n");
-        equal("cook 3", f.cli.readChefChoice(), "Chef cooking grammar");
-        equal("wait", f.cli.readChefChoice(), "Chef wait grammar");
+        equal("cook 3", f.cli.readChoice(RestaurantCLI.Role.CHEF), "Chef cooking grammar");
+        equal("wait", f.cli.readChoice(RestaurantCLI.Role.CHEF), "Chef wait grammar");
     }
 
     private static void testInvalidInputRetries() {
@@ -80,38 +80,38 @@ public class RestaurantCLITest {
                 "order", "order 1 extra", "serve", "serve 1 extra", "wait extra"};
         for (String invalid : badWaiter) {
             Fixture f = new Fixture(invalid + "\nseat 1 2\n");
-            equal("seat 1 2", f.cli.readWaiterChoice(), "Retry invalid Waiter input: " + invalid);
+            equal("seat 1 2", f.cli.readChoice(RestaurantCLI.Role.WAITER), "Retry invalid Waiter input: " + invalid);
             contains(f.text(), invalid.isEmpty() ? "Enter a command" : "Invalid command");
         }
         for (String invalid : new String[] {"seat one 2", "seat 1 two", "order 1.5", "serve 2147483648"}) {
             Fixture f = new Fixture(invalid + "\nwait\n");
-            equal("wait", f.cli.readWaiterChoice(), "Retry invalid Waiter ID: " + invalid);
+            equal("wait", f.cli.readChoice(RestaurantCLI.Role.WAITER), "Retry invalid Waiter ID: " + invalid);
             contains(f.text(), "IDs must be whole numbers");
         }
         for (String invalid : new String[] {"seat 1 2", "order 1", "serve 1", "cook", "cook 1 extra", "happy"}) {
             Fixture f = new Fixture(invalid + "\nwait\n");
-            equal("wait", f.cli.readChefChoice(), "Retry invalid Chef input: " + invalid);
+            equal("wait", f.cli.readChoice(RestaurantCLI.Role.CHEF), "Retry invalid Chef input: " + invalid);
             contains(f.text(), "Invalid command");
         }
         for (String invalid : new String[] {"cook x", "cook -2147483649"}) {
             Fixture f = new Fixture(invalid + "\nwait\n");
-            equal("wait", f.cli.readChefChoice(), "Retry invalid Chef ID: " + invalid);
+            equal("wait", f.cli.readChoice(RestaurantCLI.Role.CHEF), "Retry invalid Chef ID: " + invalid);
             contains(f.text(), "IDs must be whole numbers");
         }
     }
 
     private static void testEndOfInputAndStreamOwnership() {
         Fixture empty = new Fixture("");
-        equal(null, empty.cli.readWaiterChoice(), "EOF at Waiter prompt");
-        equal(null, empty.cli.readChefChoice(), "EOF at Chef prompt");
+        equal(null, empty.cli.readChoice(RestaurantCLI.Role.WAITER), "EOF at Waiter prompt");
+        equal(null, empty.cli.readChoice(RestaurantCLI.Role.CHEF), "EOF at Chef prompt");
         Fixture invalid = new Fixture("cook no");
-        equal(null, invalid.cli.readChefChoice(), "Invalid final line then EOF does not fabricate wait");
+        equal(null, invalid.cli.readChoice(RestaurantCLI.Role.CHEF), "Invalid final line then EOF does not fabricate wait");
         Fixture lastLine = new Fixture("wait");
-        equal("wait", lastLine.cli.readWaiterChoice(), "Accept final line without newline");
-        equal(null, lastLine.cli.readWaiterChoice(), "Then report EOF");
+        equal("wait", lastLine.cli.readChoice(RestaurantCLI.Role.WAITER), "Accept final line without newline");
+        equal(null, lastLine.cli.readChoice(RestaurantCLI.Role.WAITER), "Then report EOF");
         // Reading must leave caller-owned streams usable.
         Fixture shared = new Fixture("wait\nremaining\n");
-        shared.cli.readChefChoice();
+        shared.cli.readChoice(RestaurantCLI.Role.CHEF);
         equal("remaining", shared.input.nextLine(), "Scanner stays open");
         shared.cli.showFeedback("Still open");
         contains(shared.text(), "Still open");

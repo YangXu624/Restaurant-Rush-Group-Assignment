@@ -17,7 +17,7 @@ import restaurantrush.support.TableView;
  */
 public class RestaurantCLI {
     /** Each player prompt, in turn order, with the commands it accepts. */
-    private enum Role {
+    enum Role {
         MANAGER("Manager", "happy or wait"),
         HOST("Host", "seat <customerId> <tableId> or wait"),
         WAITER("Waiter", "seat <customerId> <tableId>, order <customerId>, serve <customerId>, or wait"),
@@ -107,49 +107,29 @@ public class RestaurantCLI {
         output.flush();
     }
 
-    /** Returns a normalized valid command, or null at end of input. */
-    public String readManagerChoice() {
-        return readChoice(Role.MANAGER);
-    }
-
-    /** Returns a normalized valid command, or null at end of input. */
-    public String readHostChoice() {
-        return readChoice(Role.HOST);
-    }
-
-    /** Returns a normalized valid command, or null at end of input. */
-    public String readWaiterChoice() {
-        return readChoice(Role.WAITER);
-    }
-
-    /** Returns a normalized valid command, or null at end of input. */
-    public String readChefChoice() {
-        return readChoice(Role.CHEF);
-    }
-
     public void showFeedback(String message) {
         output.println(Objects.requireNonNull(message, "Feedback cannot be null"));
         output.flush();
     }
 
-    private String readChoice(Role role) {
-        String usage = role.usage;
+    /** Returns a normalized valid command, or null at end of input. */
+    String readChoice(Role role) {
         while (true) {
-            output.print(role.label + " (" + usage + ")> ");
+            output.print(role.label + " (" + role.usage + ")> ");
             output.flush();
             if (!input.hasNextLine()) {
                 return null;
             }
             String line = input.nextLine().strip();
             if (line.isEmpty()) {
-                showFeedback("Enter a command: " + usage + ".");
+                showFeedback("Enter a command: " + role.usage + ".");
                 continue;
             }
             String[] parts = line.split("\\s+");
             parts[0] = parts[0].toLowerCase(Locale.ROOT);
             int expectedParts = expectedParts(role, parts[0]);
             if (parts.length != expectedParts) {
-                showFeedback("Invalid command. Use " + usage + ".");
+                showFeedback("Invalid command. Use " + role.usage + ".");
                 continue;
             }
             try {
@@ -190,10 +170,10 @@ public class RestaurantCLI {
 
     /** Offers the promotion only while it can be activated; returns false at end of input. */
     private boolean chooseHappyHour() {
-        if (!controller.canActivateHappyHour()) {
+        if (!controller.getSnapshot().happyHourAvailable()) {
             return true;
         }
-        String command = readManagerChoice();
+        String command = readChoice(Role.MANAGER);
         if (command == null) {
             return false;
         }

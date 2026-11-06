@@ -49,7 +49,7 @@ public class HappyHourTurnTest {
 
         game.startTurn();
         equal(98, customer.getSatisfaction(), "Second active turn recovers at turn start");
-        equal(false, game.canActivateHappyHour(), "Used promotion cannot be offered again");
+        equal(false, game.getSnapshot().happyHourAvailable(), "Used promotion cannot be offered again");
         finishWaitingTurn(game);
         equal(90, customer.getSatisfaction(), "Penalty on the last active turn");
         equal(false, r.getHappyHour().isActive(), "Expired after two turns");
@@ -63,16 +63,16 @@ public class HappyHourTurnTest {
     private static void testActivationOnlyAtTurnStart() {
         Restaurant r = new Restaurant();
         GameController game = game(r);
-        equal(false, game.canActivateHappyHour(), "Not offered before the turn starts");
+        equal(false, game.getSnapshot().happyHourAvailable(), "Not offered before the turn starts");
         equal(false, game.activateHappyHour().isSuccess(), "Rejected before the turn starts");
         equal(false, r.getHappyHour().isUsed(), "Rejection does not use the promotion");
 
         game.startTurn();
-        equal(true, game.canActivateHappyHour(), "Offered at the start of a turn");
+        equal(true, game.getSnapshot().happyHourAvailable(), "Offered at the start of a turn");
         equal(false, game.hostSeatCustomer(99, 1).isSuccess(), "Failed Host command");
-        equal(true, game.canActivateHappyHour(), "A failed Host command keeps the decision open");
+        equal(true, game.getSnapshot().happyHourAvailable(), "A failed Host command keeps the decision open");
         equal(true, game.waitHost().isSuccess(), "Host acts");
-        equal(false, game.canActivateHappyHour(), "Not offered once the Host has acted");
+        equal(false, game.getSnapshot().happyHourAvailable(), "Not offered once the Host has acted");
         equal(false, game.activateHappyHour().isSuccess(), "Rejected once the Host has acted");
         equal(false, r.getHappyHour().isUsed(), "Rejection does not use the promotion");
     }

@@ -38,10 +38,6 @@ public class GameController {
         turnManager.beginTurn(restaurant);
     }
 
-    public boolean canActivateHappyHour() {
-        return turnManager.canActivateHappyHour(restaurant);
-    }
-
     public ActionResult activateHappyHour() {
         return turnManager.activateHappyHour(restaurant);
     }

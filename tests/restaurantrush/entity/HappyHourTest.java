@@ -50,12 +50,6 @@ public class HappyHourTest {
         equal(0, happyHour.applyDiscount(0), "Free item");
         equal(2, happyHour.applyDiscount(3), "2.4 cents rounds down");
         equal(6, happyHour.applyDiscount(7), "5.6 cents rounds up");
-        try {
-            happyHour.applyDiscount(-1);
-            throw new AssertionError("Negative bill accepted");
-        } catch (IllegalArgumentException expected) {
-            // A bill cannot be negative.
-        }
     }
 
     private static void equal(Object expected, Object actual, String message) {

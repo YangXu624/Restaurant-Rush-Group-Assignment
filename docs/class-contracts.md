@@ -61,8 +61,6 @@ Reads commands, invokes `GameController`, and displays returned state and feedba
 | `RestaurantCLI(GameController controller, Scanner input, PrintStream output)` | Store the shared controller and supplied streams; the caller owns the streams. |
 | `void run()` | Start each turn through the controller, then display its snapshot. Read and retry Waiter commands until one succeeds, then read and retry Chef commands until one succeeds. After `finishTurn()` succeeds, display results using the saved turn number as the last completed turn. Repeat until the game finishes; stop cleanly if input ends. |
 | `void displayState(GameSnapshot snapshot)` | Show turn, revenue, average paid satisfaction, waiting queue, tables, customer satisfaction and status, order state and progress, and staff availability. Show `N/A` when average paid satisfaction is `null`. |
-| `String readWaiterChoice()` | Prompt for and read `seat <customerId> <tableId>`, `order <customerId>`, `serve <customerId>`, or `wait`. Return a normalised valid command, or `null` at End of File. |
-| `String readChefChoice()` | Prompt for and read `cook <customerId>` or `wait`. Return a normalised valid command, or `null` at End of File. |
 | `void showFeedback(String message)` | Print an action's success or failure message. |
 | `void displayOutcome(boolean won)` | After turn 18 completes, display Victory or Defeat. Obtain the final snapshot from the controller and show served count, unhappy departures, paid count, revenue, average paid satisfaction and turns used. |
 
@@ -529,7 +527,7 @@ These contracts extend the sections above. Where they differ, this section appli
 | `Host` | `ActionResult seat(Restaurant r, int customerId, int tableId)` | Delegates to `Restaurant.seat`. `TurnManager` owns the one-choice-per-turn limit. |
 | `HappyHour` | `ActionResult activate()` | Starts the two-turn duration. Fails and changes nothing if it was already used. |
 | `HappyHour` | `void endTurn()` | Counts down one active turn. Does nothing while inactive. |
-| `HappyHour` | `int applyDiscount(int billCents)` | Returns the bill after 20% off, rounded to the nearest cent (half up). Rejects a negative bill. |
+| `HappyHour` | `int applyDiscount(int billCents)` | Returns the bill after 20% off, rounded to the nearest cent (half up). |
 | `HappyHour` | `boolean isActive()`, `boolean isUsed()`, `int getTurnsRemaining()` | Read the promotion's state. |
 | `Restaurant` | `HappyHour getHappyHour()` | Returns the game's single promotion. |
 | `Customer` | `void recoverSatisfaction()` | Adds 15 satisfaction, capped at 100, while `WAITING` or `SEATED`. Otherwise does nothing. |
@@ -538,7 +536,7 @@ These contracts extend the sections above. Where they differ, this section appli
 | `TurnManager` | `ActionResult activateHappyHour(Restaurant r)` | Activates the promotion and applies the activation turn's recovery. Fails and changes nothing when unavailable. |
 | `TurnManager` | `void beginTurn(Restaurant r)` | Adds the scheduled arrival, then applies recovery if Happy Hour is still active. |
 | `TurnManager` | `void resolveTurn(Restaurant r)` | Also ends one turn of Happy Hour. The Host's choice is required before the Waiter's. |
-| `GameController` | `hostSeatCustomer`, `waitHost`, `canActivateHappyHour`, `activateHappyHour` | Expose the operations above to the CLI. A failed Host seating keeps the Host's choice. |
+| `GameController` | `hostSeatCustomer`, `waitHost`, `activateHappyHour` | Expose the operations above to the CLI. A failed Host seating keeps the Host's choice. |
 | `GameSnapshot` | `hostAvailable`, `happyHourAvailable`, `happyHourTurnsRemaining` | Additional immutable display fields. |
-| `RestaurantCLI` | `String readManagerChoice()`, `String readHostChoice()` | Prompt for `happy` or `wait`, and for `seat <customerId> <tableId>` or `wait`. Return a normalised valid command, or `null` at End of File. |
+| `RestaurantCLI` | `String readChoice(Role role)` (package-private) | Prompt for the commands that role accepts: Manager `happy` or `wait`; Host `seat <customerId> <tableId>` or `wait`; Waiter `seat <customerId> <tableId>`, `order <customerId>`, `serve <customerId>`, or `wait`; Chef `cook <customerId>` or `wait`. Return a normalised valid command, or `null` at End of File. |
 | `RestaurantCLI` | `void run()` | Each turn: display state, offer Happy Hour only while it can be activated (displaying state again if activated), then read and retry Host, Waiter and Chef commands in that order. |

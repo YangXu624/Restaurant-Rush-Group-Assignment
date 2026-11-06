@@ -22,16 +22,11 @@ public class HappyHour {
 
     /** Called once when a turn ends, so the activation turn counts as the first turn. */
     public void endTurn() {
-        if (turnsRemaining > 0) {
-            turnsRemaining--;
-        }
+        turnsRemaining = Math.max(0, turnsRemaining - 1);
     }
 
     /** Returns the bill after 20% off, rounded to the nearest cent (half up). */
     public int applyDiscount(int billCents) {
-        if (billCents < 0) {
-            throw new IllegalArgumentException("Bill cannot be negative");
-        }
         long discounted = (long) billCents * DISCOUNTED_PERCENT;
         return Math.toIntExact((discounted + 50) / 100);
     }
