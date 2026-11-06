@@ -1,9 +1,5 @@
 wait
-wait
 seat 1 1
-wait
-wait
-wait
 order 1
 cook 1
 wait
@@ -12,10 +8,10 @@ serve 1
 wait
 wait
 wait
+wait
+wait
+wait
 seat 2 2
-wait
-wait
-wait
 order 2
 cook 2
 wait
@@ -24,10 +20,10 @@ serve 2
 wait
 wait
 wait
+wait
+wait
+wait
 seat 3 1
-wait
-wait
-wait
 order 3
 cook 3
 wait
@@ -40,33 +36,30 @@ serve 3
 wait
 wait
 wait
+wait
+wait
+happy
 seat 4 2
-wait
-wait
-wait
 order 4
 cook 4
 wait
 wait
-seat 5 1
 cook 4
-wait
-wait
+seat 5 1
 order 5
 cook 4
-wait
 wait
 serve 4
 cook 5
 wait
 wait
-wait
 cook 5
 wait
 wait
-wait
 cook 5
-wait
-wait
+seat 6 2
 serve 5
 wait
+wait
+order 6
+cook 6
