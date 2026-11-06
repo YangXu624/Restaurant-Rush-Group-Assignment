@@ -517,4 +517,28 @@ These make implicit interactions explicit without adding classes or later-stage 
 | M3 and M4 | Staff limits, Waiter-before-Chef sequencing and automatic Cashier timing |
 | M4 and M5 | Command/result exchange, snapshots, lifecycle calls and end-of-turn reporting |
 
-Future Stage 2 and Stage 3 work must extend this design deliberately and document changed contracts. In particular, the brief requires customer-dispatched behaviour, VIP/Critic types, Host seating, ComboMeal composition and Happy Hour pricing/timing, but this meeting does not yet define their class APIs.
+Future Stage 2 and Stage 3 work must extend this design deliberately and document changed contracts. In particular, the brief requires customer-dispatched behaviour, VIP/Critic types, Host seating, ComboMeal composition and Happy Hour pricing/timing, but this meeting does not yet define their class APIs. See Stage 3 additions below.
+
+## Stage 3 additions
+
+These contracts extend the sections above. Where they differ, this section applies.
+
+| Type | Public operation | Contract |
+| --- | --- | --- |
+| `ComboMeal` | `ComboMeal(MenuItem first, MenuItem second)` | A `MenuItem` priced at 90% of its components' combined price, rounded to the nearest cent, with preparation units equal to their sum. Rejects null components. |
+| `Host` | `ActionResult seat(Restaurant r, int customerId, int tableId)` | Delegates to `Restaurant.seat`. `TurnManager` owns the one-choice-per-turn limit. |
+| `HappyHour` | `ActionResult activate()` | Starts the two-turn duration. Fails and changes nothing if it was already used. |
+| `HappyHour` | `void endTurn()` | Counts down one active turn. Does nothing while inactive. |
+| `HappyHour` | `int applyDiscount(int billCents)` | Returns the bill after 20% off, rounded to the nearest cent (half up). Rejects a negative bill. |
+| `HappyHour` | `boolean isActive()`, `boolean isUsed()`, `int getTurnsRemaining()` | Read the promotion's state. |
+| `Restaurant` | `HappyHour getHappyHour()` | Returns the game's single promotion. |
+| `Customer` | `void recoverSatisfaction()` | Adds 15 satisfaction, capped at 100, while `WAITING` or `SEATED`. Otherwise does nothing. |
+| `Waiter` | `ActionResult takeOrder(Restaurant r, int customerId)` | Applies an active Happy Hour after `calculateBillCents`, then locks the result in the `Order`. |
+| `TurnManager` | `boolean canActivateHappyHour(Restaurant r)` | True during a started, unresolved turn before the Host has chosen, if the promotion is unused. |
+| `TurnManager` | `ActionResult activateHappyHour(Restaurant r)` | Activates the promotion and applies the activation turn's recovery. Fails and changes nothing when unavailable. |
+| `TurnManager` | `void beginTurn(Restaurant r)` | Adds the scheduled arrival, then applies recovery if Happy Hour is still active. |
+| `TurnManager` | `void resolveTurn(Restaurant r)` | Also ends one turn of Happy Hour. The Host's choice is required before the Waiter's. |
+| `GameController` | `hostSeatCustomer`, `waitHost`, `canActivateHappyHour`, `activateHappyHour` | Expose the operations above to the CLI. A failed Host seating keeps the Host's choice. |
+| `GameSnapshot` | `hostAvailable`, `happyHourAvailable`, `happyHourTurnsRemaining` | Additional immutable display fields. |
+| `RestaurantCLI` | `String readManagerChoice()`, `String readHostChoice()` | Prompt for `happy` or `wait`, and for `seat <customerId> <tableId>` or `wait`. Return a normalised valid command, or `null` at End of File. |
+| `RestaurantCLI` | `void run()` | Each turn: display state, offer Happy Hour only while it can be activated (displaying state again if activated), then read and retry Host, Waiter and Chef commands in that order. |

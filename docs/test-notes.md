@@ -1,6 +1,34 @@
 # Reproducible gameplay tests
 
-## Stage 2
+## Stage 3
+
+From the repository root, with JDK 17 or newer and a POSIX shell, run:
+
+```sh
+./test.sh
+./run.sh < tests/fixtures/m5/victory.txt
+./run.sh < tests/fixtures/m5/defeat.txt
+```
+
+All 23 test suites passed on 6 November 2026 using JDK 17.0.21. Both CLI runs completed 18 turns with these results:
+
+| Fixture | Outcome | Paid | Served | Revenue | Average paid satisfaction | Unhappy departures |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `victory.txt` | Victory | 4 | 5 | $59.94 | 88.75 | 0 |
+| `defeat.txt` | Defeat | 0 | 0 | $0.00 | N/A | 1 |
+
+What to look for in the victory run:
+
+- **Host:** on turn 1 the Host seats customer 1, the Waiter takes the order and the Chef cooks it, all on one turn.
+- **Happy Hour:** customer 4 waits through turn 10 and reaches 92 satisfaction. The manager activates Happy Hour on turn 11, and customer 4 recovers to 100. It shows 2 turns remaining on turn 11 and 1 on turn 12, recovering customer 4 again, and is over by turn 13.
+- **Price locking:** customer 3 ordered Pasta on turn 7 and still pays $18.00 on turn 11, during Happy Hour. Customer 5 (Critic) orders the combo on turn 13, after it expires, and is charged the full $24.30.
+- **Combo:** customer 4 orders the combo on turn 11 for $24.30 × 0.8 = $19.44. The Chef cooks it on turns 11, 12 and 13, so the Waiter serves it on turn 14.
+
+The defeat fixture uses `wait` at every prompt. Only customer 1 reaches zero satisfaction before the game ends. `invalid-input.txt` repeats the victory run with rejected commands at each prompt, and `M5IntegrationTest` checks that it ends in the same state.
+
+## Stage 2 (historical)
+
+Use the files at the `stage-2` tag to reproduce the results below.
 
 Verified on 4 November 2026 at the Stage 2 gameplay merge (`f56f8f5`). From the repository root, with JDK 17 or newer and a POSIX shell, run:
 
