@@ -38,6 +38,14 @@ public class GameController {
         turnManager.beginTurn(restaurant);
     }
 
+    public boolean canActivateHappyHour() {
+        return turnManager.canActivateHappyHour(restaurant);
+    }
+
+    public ActionResult activateHappyHour() {
+        return turnManager.activateHappyHour(restaurant);
+    }
+
     public ActionResult hostSeatCustomer(int customerId, int tableId) {
         if (!turnManager.canAssignHost()) {
             return ActionResult.fail("Host choice is unavailable.");

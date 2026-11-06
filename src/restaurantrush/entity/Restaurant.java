@@ -29,6 +29,7 @@ public class Restaurant {
     private int abandonedCount;
     private int paidSatisfactionTotal;
     private int paidCount;
+    private final HappyHour happyHour = new HappyHour();
 
     /** Creates two free tables, the base menu, and empty lists and totals. */
     public Restaurant() {
@@ -295,6 +296,10 @@ public class Restaurant {
     }
 
     /** Returns a read-only list of customers still in the restaurant, in arrival order. */
+    public HappyHour getHappyHour() {
+        return happyHour;
+    }
+
     public List<Customer> getActiveCustomers() {
         List<Customer> active = new ArrayList<>();
         for (Customer c : customers) {

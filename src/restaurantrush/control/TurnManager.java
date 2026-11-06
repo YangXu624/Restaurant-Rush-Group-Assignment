@@ -6,6 +6,7 @@ import restaurantrush.entity.CustomerStatus;
 import restaurantrush.entity.Restaurant;
 import restaurantrush.entity.VIPCustomer;
 import restaurantrush.staff.Cashier;
+import restaurantrush.support.ActionResult;
 
 /** Owns Stage 2 turn sequencing and automatic events. Owner: M4: Nickolas. */
 public class TurnManager {
@@ -50,6 +51,28 @@ public class TurnManager {
         chefTaskUsed = false;
         turnResolved = false;
         turnStarted = true;
+        // beginTurn runs once per turn, so redisplays and rejected commands cannot repeat this.
+        if (r.getHappyHour().isActive()) {
+            recoverWaitingCustomers(r);
+        }
+    }
+
+    /** The manager decides after the arrival and before the Host acts. */
+    public boolean canActivateHappyHour(Restaurant r) {
+        requireRestaurant(r);
+        return turnStarted && !turnResolved && !finished && !hostTaskUsed && !r.getHappyHour().isUsed();
+    }
+
+    /** The activation turn is an active turn, so its recovery is applied here. */
+    public ActionResult activateHappyHour(Restaurant r) {
+        if (!canActivateHappyHour(r)) {
+            return ActionResult.fail("Happy Hour is unavailable.");
+        }
+        ActionResult result = r.getHappyHour().activate();
+        if (result.isSuccess()) {
+            recoverWaitingCustomers(r);
+        }
+        return result;
     }
 
     public boolean canAssignHost() {
@@ -113,6 +136,7 @@ public class TurnManager {
                 r.removeAbandoned(customer);
             }
         }
+        r.getHappyHour().endTurn();
         turnResolved = true;
     }
 
@@ -134,6 +158,12 @@ public class TurnManager {
 
     public int getCurrentTurn() {
         return currentTurn;
+    }
+
+    private static void recoverWaitingCustomers(Restaurant r) {
+        for (Customer customer : r.getActiveCustomers()) {
+            customer.recoverSatisfaction();
+        }
     }
 
     private static void requireRestaurant(Restaurant r) {
