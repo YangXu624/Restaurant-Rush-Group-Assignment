@@ -2,6 +2,7 @@ package restaurantrush.staff;
 
 import restaurantrush.entity.Customer;
 import restaurantrush.entity.CustomerStatus;
+import restaurantrush.entity.HappyHour;
 import restaurantrush.entity.MenuItem;
 import restaurantrush.entity.Order;
 import restaurantrush.entity.Restaurant;
@@ -42,6 +43,11 @@ public class Waiter {
 
         MenuItem item = c.chooseItem(r.getMenu());
         int billCents = c.calculateBillCents(item);
+        // Brief 4.3: the customer's own discount comes first, then Happy Hour.
+        HappyHour happyHour = r.getHappyHour();
+        if (happyHour.isActive()) {
+            billCents = happyHour.applyDiscount(billCents);
+        }
         // The order shares its customer's ID so Restaurant.findOrder() can locate it.
         // Price calculation and order validation complete before either object is linked.
         Order order = new Order(customerId, item, billCents);

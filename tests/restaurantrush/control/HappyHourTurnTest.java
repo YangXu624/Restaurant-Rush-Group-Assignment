@@ -4,6 +4,7 @@ import java.util.Objects;
 import restaurantrush.entity.Customer;
 import restaurantrush.entity.CustomerStatus;
 import restaurantrush.entity.Restaurant;
+import restaurantrush.entity.VIPCustomer;
 import restaurantrush.staff.Cashier;
 import restaurantrush.staff.Chef;
 import restaurantrush.staff.Host;
@@ -11,10 +12,17 @@ import restaurantrush.staff.Waiter;
 
 /** Activation timing and once-per-turn recovery, using real collaborators. */
 public class HappyHourTurnTest {
+    // Extra arrivals outside the schedule; the menu cycle gives them a Burger and the combo.
+    private static final int VIP_ID = 22;
+    private static final int COMBO_ID = 20;
+
     public static void main(String[] args) {
         testRecoveryOncePerActiveTurn();
         testActivationOnlyAtTurnStart();
         testRecoverySkipsServedAndDepartedCustomers();
+        testPriceLockedDuringHappyHour();
+        testEarlierOrderKeepsItsPrice();
+        testOrderAfterExpiryPaysFullPrice();
         System.out.println("All Happy Hour turn tests passed successfully!");
     }
 
@@ -100,6 +108,84 @@ public class HappyHourTurnTest {
         equal(true, game.activateHappyHour().isSuccess(), "Activation on turn 3");
         equal(92, served.getSatisfaction(), "Served customer does not recover");
         equal(0, departed.getSatisfaction(), "Departed customer does not recover");
+    }
+
+    private static void testPriceLockedDuringHappyHour() {
+        Restaurant r = new Restaurant();
+        r.addArrival(new VIPCustomer(VIP_ID));
+        r.addArrival(new Customer(COMBO_ID));
+        GameController game = game(r);
+
+        game.startTurn();
+        equal(true, game.activateHappyHour().isSuccess(), "Activation on turn 1");
+        equal(true, game.hostSeatCustomer(VIP_ID, 1).isSuccess(), "Host seats the VIP");
+        equal(true, game.takeOrder(VIP_ID).isSuccess(), "Waiter orders on the activation turn");
+        equal(1080, r.findOrder(VIP_ID).getBillCents(), "$15 x 0.9 x 0.8");
+        equal(true, game.prepareOrder(VIP_ID).isSuccess(), "Burger cooked");
+        game.finishTurn();
+
+        game.startTurn();
+        equal(true, game.hostSeatCustomer(COMBO_ID, 2).isSuccess(), "Host seats the combo customer");
+        equal(true, game.takeOrder(COMBO_ID).isSuccess(), "Waiter orders on the second active turn");
+        equal(1944, r.findOrder(COMBO_ID).getBillCents(), "Combo: $24.30 x 0.8");
+        game.waitChef();
+        game.finishTurn();
+
+        // Serving, eating and paying after expiry still uses the locked price.
+        game.startTurn();
+        equal(false, r.getHappyHour().isActive(), "Expired before service");
+        game.waitHost();
+        equal(true, game.serveOrder(VIP_ID).isSuccess(), "VIP served");
+        game.waitChef();
+        game.finishTurn();
+        for (int turn = 4; turn <= 5; turn++) {
+            playWaitingTurn(game);
+        }
+        equal(CustomerStatus.PAID, r.findCustomer(VIP_ID).getStatus(), "VIP paid");
+        equal(1080, r.getRevenueCents(), "Cashier collects the locked price");
+    }
+
+    private static void testEarlierOrderKeepsItsPrice() {
+        Restaurant r = new Restaurant();
+        r.addArrival(new VIPCustomer(VIP_ID));
+        GameController game = game(r);
+
+        game.startTurn();
+        game.hostSeatCustomer(VIP_ID, 1);
+        game.takeOrder(VIP_ID);
+        game.prepareOrder(VIP_ID);
+        game.finishTurn();
+        equal(1350, r.findOrder(VIP_ID).getBillCents(), "VIP discount only before Happy Hour");
+
+        game.startTurn();
+        game.waitHost();
+        game.serveOrder(VIP_ID);
+        game.waitChef();
+        game.finishTurn();
+
+        game.startTurn();
+        equal(true, game.activateHappyHour().isSuccess(), "Activated after the order was placed");
+        finishWaitingTurn(game);
+        game.startTurn();
+        equal(true, r.getHappyHour().isActive(), "Paying while Happy Hour is active");
+        finishWaitingTurn(game);
+        equal(CustomerStatus.PAID, r.findCustomer(VIP_ID).getStatus(), "VIP paid during Happy Hour");
+        equal(1350, r.findOrder(VIP_ID).getBillCents(), "Earlier order unchanged");
+        equal(1350, r.getRevenueCents(), "No discount applied at payment");
+    }
+
+    private static void testOrderAfterExpiryPaysFullPrice() {
+        Restaurant r = new Restaurant();
+        GameController game = game(r);
+        game.startTurn();
+        game.activateHappyHour();
+        finishWaitingTurn(game);
+        playWaitingTurn(game);
+
+        game.startTurn();
+        game.hostSeatCustomer(1, 1);
+        equal(true, game.takeOrder(1).isSuccess(), "Order on turn 3");
+        equal(900, r.findOrder(1).getBillCents(), "Full price once expired");
     }
 
     private static void playWaitingTurn(GameController game) {
