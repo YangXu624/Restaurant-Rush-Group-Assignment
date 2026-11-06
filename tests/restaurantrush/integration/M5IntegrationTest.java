@@ -63,27 +63,53 @@ public class M5IntegrationTest {
         equal(4, state.paidCount(), "Victory paid count");
         equal(5, state.servedCount(), "Victory served count");
         equal(0, state.abandonedCount(), "Victory departures");
-        equal(6480, state.revenueCents(), "Four paid bills exclude the served Critic");
-        equal(77.5, state.averagePaidSatisfaction(), "Unrounded recorded average");
-        equal(List.of(6), state.waitingCustomerIds(), "Last arrival still queued");
-        equal(List.of(new TableView(1, 5), new TableView(2, null)), state.tables(), "Served Critic retains table");
+        equal(5994, state.revenueCents(), "$9.00 + $13.50 + $18.00 + $19.44, excluding the served Critic");
+        equal(88.75, state.averagePaidSatisfaction(), "(92 + 95 + 84 + 84) / 4");
+        equal(List.of(), state.waitingCustomerIds(), "Every arrival is seated");
+        equal(List.of(new TableView(1, 5), new TableView(2, 6)), state.tables(), "Unpaid customers keep their tables");
         equal(List.of(1, 2, 3, 4, 5, 6), state.customers().stream().map(CustomerView::id).toList(), "Six arrivals in order");
-        equal(new CustomerView(6, 76, CustomerStatus.WAITING, null, null, null, null, "Regular", null),
-                state.customers().get(5), "Turn-16 arrival cannot complete payment");
         for (int i = 0; i < 4; i++) {
             equal(CustomerStatus.PAID, state.customers().get(i).status(), "Earlier customer paid");
             equal(null, state.customers().get(i).tableId(), "Paid customer releases table");
         }
+        equal(List.of(900, 1350, 1800, 1944, 2430, 1500),
+                state.customers().stream().map(CustomerView::billCents).toList(), "Locked bills");
+        equal(new CustomerView(6, 76, CustomerStatus.SEATED, OrderStatus.READY, "Burger", 0, 2, "Regular", 1500),
+                state.customers().get(5), "Turn-16 arrival cannot complete payment");
+
         String text = result.text();
         contains(text, "Type: VIP | Locked bill: $13.50");
         contains(text, "Type: Critic | Locked bill: $24.30");
-        contains(turnDisplay(text, 9), "Customer 3 | satisfaction 84 | SEATED | table 1 | order: Pasta | PREPARING | 1 unit(s) remaining");
-        contains(turnDisplay(text, 10), "Customer 3 | satisfaction 76 | SEATED | table 1 | order: Pasta | READY | 0 unit(s) remaining");
-        contains(turnDisplay(text, 11), "Customer 3 | satisfaction 76 | SERVED");
-        contains(turnDisplay(text, 12), "Customer 3 | satisfaction 76 | READY_TO_PAY");
-        contains(text, "End of turn 11\nRevenue: $22.50");
-        contains(text, "End of turn 12\nRevenue: $40.50");
-        contains(text, "Victory\nRevenue: $64.80\nAverage paid satisfaction: 77.50");
+
+        // Host, Waiter and Chef all act for the same customer on one turn.
+        contains(turnDisplay(text, 1), "Customer 1 ordered Salad.");
+        contains(turnDisplay(text, 2), "Customer 1 | satisfaction 92 | SEATED | table 1 | order: Salad | READY | 0 unit(s) remaining");
+
+        // Happy Hour on turns 11 and 12: customer 4 recovers and orders the combo at a discount.
+        String activation = turnDisplay(text, 11);
+        contains(activation, "Happy Hour: available");
+        contains(activation, "Customer 4 | satisfaction 92 | WAITING");
+        contains(activation, "Happy Hour is active for 2 turns.");
+        contains(activation, "Happy Hour: active, 2 turn(s) remaining");
+        contains(activation, "Customer 4 | satisfaction 100 | WAITING");
+        contains(activation, "Customer 4 ordered Salad + Pasta.");
+        String secondTurn = turnDisplay(text, 12);
+        contains(secondTurn, "Happy Hour: active, 1 turn(s) remaining");
+        contains(secondTurn, "Customer 4 | satisfaction 100 | SEATED | table 2 | order: Salad + Pasta | PREPARING | 2 unit(s) remaining");
+        contains(secondTurn, "Type: Regular | Locked bill: $19.44");
+        equal(0, occurrences(secondTurn, "Manager ("), "Used promotion is not offered again");
+
+        // After expiry: no recovery, the Critic pays full price, and the combo needs a third cook.
+        String expired = turnDisplay(text, 13);
+        contains(expired, "Happy Hour: unavailable");
+        contains(expired, "Customer 4 | satisfaction 92 | SEATED | table 2 | order: Salad + Pasta | PREPARING | 1 unit(s) remaining");
+        contains(turnDisplay(text, 14), "Customer 4 | satisfaction 84 | SEATED | table 2 | order: Salad + Pasta | READY | 0 unit(s) remaining");
+
+        // Customer 3 ordered before Happy Hour and pays full price while it is active.
+        contains(text, "End of turn 10\nRevenue: $22.50");
+        contains(text, "End of turn 11\nRevenue: $40.50");
+        contains(text, "End of turn 16\nRevenue: $59.94");
+        contains(text, "Victory\nRevenue: $59.94\nAverage paid satisfaction: 88.75");
     }
 
     private static void testDefeat(Result result) {
@@ -102,10 +128,13 @@ public class M5IntegrationTest {
     private static void testInvalidInput(Result invalid, Result clean) {
         complete(invalid, true);
         equal(clean.state(), invalid.state(), "Invalid attempts change no state, timing or final result");
+        contains(invalid.text(), "Invalid command. Use happy or wait.");
+        contains(turnDisplay(invalid.text(), 12), "Invalid command. Use seat <customerId> <tableId> or wait.");
+        contains(invalid.text(), "Invalid command. Use seat <customerId> <tableId> or wait.");
         contains(invalid.text(), "Invalid command.");
         equal(2, occurrences(invalid.text(), "IDs must be whole numbers"), "Malformed ID and overflow both rejected");
         contains(invalid.text(), "Customer 99 has not arrived.");
-        contains(invalid.text(), "Customer 1 has no order.");
+        contains(invalid.text(), "Customer 2 has no order.");
         contains(invalid.text(), "Customer 1 has already ordered.");
         contains(invalid.text(), "cannot be cooked (SERVED)");
     }
@@ -126,6 +155,7 @@ public class M5IntegrationTest {
         equal(false, result.won(), "EOF is not victory");
         equal(1, result.state().turn(), "Incomplete turn does not advance");
         equal(100, result.state().customers().get(0).satisfaction(), "No automatic penalty for incomplete turn");
+        equal(false, result.state().hostAvailable(), "Host has already chosen");
         equal(!waiterActed, result.state().waiterAvailable(), "EOF preserves Waiter choice");
         equal(waiterActed, result.state().chefAvailable(), "EOF preserves Chef choice");
         equal(waiterActed ? CustomerStatus.SEATED : CustomerStatus.WAITING,
@@ -140,6 +170,7 @@ public class M5IntegrationTest {
         equal(true, result.finished(), "Fixture completes game");
         equal(won, result.won(), "Controller decides outcome");
         equal(18, result.state().turn(), "All 18 turns played");
+        equal(false, result.state().hostAvailable(), "No Host after completion");
         equal(false, result.state().waiterAvailable(), "No Waiter after completion");
         equal(false, result.state().chefAvailable(), "No Chef after completion");
         equal(18, occurrences(result.text(), "End of turn "), "Exactly 18 turn completions");

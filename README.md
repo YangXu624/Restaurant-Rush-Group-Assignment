@@ -8,9 +8,9 @@ Repository URL: [https://github.com/YangXu624/Restaurant-Rush-Group-Assignment](
 
 ## 1. Project Overview
 
-Stage 2 adds VIP and Critic customers to the playable Stage 1 game. The original regular-only game is available at the `stage-1` tag.
+Stage 3 adds a Host, a combo meal and a Happy Hour promotion to the playable Stage 2 game. The earlier games are available at the `stage-1` and `stage-2` tags.
 
-The simulation runs for a fixed sequence of **18 turns**. The player manages restaurant floor operations through a command-line interface (CLI), directing a Waiter and Chef each turn while an automated Cashier handles billing. Customer arrivals, menu selection, and order preparation follow a completely deterministic schedule.
+The simulation runs for a fixed sequence of **18 turns**. The player manages restaurant floor operations through a command-line interface (CLI), deciding on Happy Hour and directing a Host, Waiter and Chef each turn while an automated Cashier handles billing. Customer arrivals, menu selection, and order preparation follow a completely deterministic schedule.
 
 ### Stage 1 Team Member Responsibilities & Module Ownership
 
@@ -24,7 +24,7 @@ The simulation runs for a fixed sequence of **18 turns**. The player manages res
 
 ---
 
-## 2. Game Rules & Mechanics (Stage 2)
+## 2. Game Rules & Mechanics (Stage 3)
 
 ### Base Configuration
 - **Total Turns:** Exactly 18 turns. The game does not terminate early.
@@ -34,6 +34,7 @@ The simulation runs for a fixed sequence of **18 turns**. The player manages res
   - `Salad`: \$9.00 (900¢), requires **1 cooking unit**.
   - `Burger`: \$15.00 (1500¢), requires **1 cooking unit**.
   - `Pasta`: \$18.00 (1800¢), requires **2 cooking units**.
+  - `Salad + Pasta` combo: \$24.30 (2430¢, 90% of the combined price), requires **3 cooking units**.
 - **Customer Lifecycle & Satisfaction:**
   - Customers begin with **100** satisfaction.
   - While `WAITING` (in queue) or `SEATED` (waiting for food), satisfaction decreases at the rate for that customer type (minimum 0).
@@ -49,11 +50,27 @@ The simulation runs for a fixed sequence of **18 turns**. The player manages res
 
 | Customer | Arrival turns (IDs) | Satisfaction lost per waiting turn | Dish choice | Bill |
 | --- | --- | --- | --- | --- |
-| Regular | 1, 7, 10, 16 (IDs 1, 3, 4, 6) | 8 | Cycle through the menu using `(id - 1) % menu.size()` | Full price |
+| Regular | 1, 7, 10, 16 (IDs 1, 3, 4, 6) | 8 | Cycle through the four-item menu using `(id - 1) % menu.size()`, so customer 4 chooses the combo | Full price |
 | VIP | 4 (ID 2) | 5 | Same rule as Regular | 10% off, rounded to the nearest cent (half up) |
 | Critic | 13 (ID 5) | 12 | Highest-priced item, first in menu order on a tie | Full price |
 
-The Waiter asks each customer to choose a dish and calculate its bill. Java calls the method for that customer's class. The order stores the price at that point, and the Cashier collects it at payment. In the base game the VIP orders a $13.50 Burger and the Critic orders an $18.00 Pasta that takes two Chef actions.
+The Waiter asks each customer to choose a dish and calculate its bill. Java calls the method for that customer's class. The order stores the price at that point, and the Cashier collects it at payment. Without Happy Hour the VIP orders a $13.50 Burger and the Critic orders a $24.30 combo that takes three Chef actions.
+
+### Host
+
+The Host seats at most one queued customer per turn, in addition to the Waiter's task, and may wait instead. The Waiter can still seat customers. A failed Host command keeps the Host's action, so the player can retry.
+
+### Happy Hour
+
+The manager may activate Happy Hour once per game, at the start of a turn. It lasts for that turn and the next, and the CLI displays the remaining duration.
+
+- Orders taken while it is active get 20% off, rounded to the nearest cent (half up). The VIP discount applies first: a VIP Burger costs $15.00 × 0.9 × 0.8 = $10.80.
+- The price is locked when the order is taken. Orders already placed keep their price, even if they are paid during Happy Hour.
+- During each active turn, customers who are `WAITING` or `SEATED` recover 15 satisfaction, up to 100. Served and departed customers do not recover. The usual waiting penalty still applies at the end of the turn.
+
+### Turn order
+
+Scheduled arrival → manager's Happy Hour decision → recovery if active → Host → Waiter → Chef → eating, payment, waiting penalties and abandonment.
 
 ### End-of-Game Evaluation (Turn 18)
 Victory requires satisfying **all three** targets simultaneously at the conclusion of turn 18:
@@ -65,10 +82,19 @@ Victory requires satisfying **all three** targets simultaneously at the conclusi
 
 ## 3. CLI Commands
 
-During each turn, the CLI prompts for two distinct staff decisions:
+During each turn, the CLI prompts for these decisions in order:
+
+### Manager Decision
+Offered at the start of each turn until Happy Hour has been activated:
+- `happy`: Activate Happy Hour for this turn and the next.
+- `wait`: Leave Happy Hour off this turn.
+
+### Host Phase
+- `seat <customerId> <tableId>`: Seat a customer from the waiting queue at an empty table.
+- `wait`: The Host takes no action this turn.
 
 ### Waiter Phase
-The Waiter acts first. Choose one of the following:
+The Waiter acts after the Host. Choose one of the following:
 - `seat <customerId> <tableId>`: Seat a customer from the waiting queue at an empty table.
 - `order <customerId>`: Take the order of a seated customer (assigns their deterministic dish).
 - `serve <customerId>`: Deliver food to a customer whose order status is `READY`.
@@ -99,7 +125,7 @@ The Chef acts after the Waiter's choice has been processed:
 ```
 
 ### Automated Unit & Integration Tests
-The repository includes a comprehensive standalone test suite (19 suites covering all units, contracts, and fixtures) without external build tool dependencies:
+The repository includes a comprehensive standalone test suite (23 suites covering all units, contracts, and fixtures) without external build tool dependencies:
 ```sh
 ./test.sh
 ```
@@ -107,7 +133,7 @@ The repository includes a comprehensive standalone test suite (19 suites coverin
 ### Reproducible Fixture Runs
 Automated end-to-end runs using standard input fixtures:
 ```sh
-# Reproducible Victory Run (Turns 1-18 -> Victory: $67.50 revenue, 5 paid, 74.80 avg satisfaction)
+# Reproducible Victory Run (Turns 1-18 -> Victory: $59.94 revenue, 4 paid, 88.75 avg satisfaction; uses the Host, a combo and Happy Hour)
 ./run.sh < tests/fixtures/m5/victory.txt
 
 # Reproducible Defeat Run (Turns 1-18 -> Defeat: 0 paid, 1 departure)
@@ -120,7 +146,7 @@ Automated end-to-end runs using standard input fixtures:
 ./run.sh < tests/fixtures/m5/invalid-input.txt
 ```
 
-Stage 2 results and historical Stage 1 runs are documented in [docs/test-notes.md](docs/test-notes.md).
+Stage 3 results and historical Stage 1 and 2 runs are documented in [docs/test-notes.md](docs/test-notes.md).
 
 ---
 
@@ -135,16 +161,19 @@ src/restaurantrush/
 │   ├── GameController.java   # Top-level gameplay facade, action routing, victory evaluator
 │   └── TurnManager.java      # Turn lifecycle, arrival clock, staff phase tracking
 ├── entity/
+│   ├── ComboMeal.java        # Menu item built from two other menu items
 │   ├── Customer.java         # Lifecycle state, satisfaction tracking
 │   ├── VIPCustomer.java      # Lower waiting penalty and discounted bill
 │   ├── CriticCustomer.java   # Higher waiting penalty and highest-price dish choice
 │   ├── CustomerStatus.java   # WAITING, SEATED, SERVED, READY_TO_PAY, PAID, LEFT
+│   ├── HappyHour.java        # One activation, two-turn duration, 20% discount
 │   ├── MenuItem.java         # Name, price (cents), cooking time (units)
 │   ├── Order.java            # Dish association, preparation progress, status
 │   ├── OrderStatus.java      # PLACED, PREPARING, READY, SERVED, PAID, CANCELLED
 │   ├── Restaurant.java       # Central aggregate: tables, queue, orders, revenue
 │   └── Table.java            # Table ID and seated customer tracking
 ├── staff/
+│   ├── Host.java             # Seating, separate from the Waiter's task
 │   ├── Waiter.java           # Seating, taking orders, serving meals
 │   ├── Chef.java             # Order cooking and progress advancement
 │   └── Cashier.java          # Automatic payment collection and bill settlement
@@ -191,3 +220,28 @@ The team successfully aligned and closed all Stage 1 open items from Section 9 o
 | `tests/fixtures/m5/victory.txt`, `tests/fixtures/m5/invalid-input.txt` | Allow a second cooking action for the Critic's Pasta. |
 | `MainTest.java`, `M5IntegrationTest.java` | Verify the revised fixture outcomes through the launcher and CLI. |
 | `README.md`, `docs/test-notes.md` | Document the new rules, file changes and reproducible outcomes for both stages. |
+
+## 8. Changes from Stage 2 to Stage 3
+
+[Compare the Stage 2 and Stage 3 tags](https://github.com/YangXu624/Restaurant-Rush-Group-Assignment/compare/stage-2...stage-3). File names below are grouped by their role. No files were deleted.
+
+| New files | Reason |
+| --- | --- |
+| `ComboMeal.java`, `ComboMealTest.java` | Add a menu item made of two existing items, with its derived price and preparation units. |
+| `Host.java`, `HostIntegrationTest.java` | Add the Host's separate seating action and check it alongside the Waiter and Chef. |
+| `HappyHour.java`, `HappyHourTest.java`, `HappyHourTurnTest.java` | Keep the promotion's duration, single activation and discount in one class, then check its timing and pricing during real turns. |
+| `tests/fixtures/stage2/baseline-commands.txt` | Keep the command schedule that `Stage2IntegrationTest` checks, now that the main victory fixture uses Stage 3 features. |
+| `docs/stage2_class_diagram.drawio` | Record the Stage 2 design. |
+
+| Existing files changed | Reason |
+| --- | --- |
+| `Restaurant.java` | Register the combo as the fourth menu item and own the game's single `HappyHour`. |
+| `Customer.java` | Recover satisfaction while waiting during Happy Hour. |
+| `Waiter.java` | Apply Happy Hour after the customer calculates their bill, before the order locks the price. |
+| `TurnManager.java` | Track the Host's action, activate Happy Hour before the Host acts, apply recovery once per active turn and end its duration with the turn. |
+| `GameController.java`, `Main.java` | Share the Host and expose the Host and Happy Hour operations to the CLI. |
+| `GameSnapshot.java`, `RestaurantCLI.java` | Add Manager and Host prompts, and display Host availability and the remaining Happy Hour duration. |
+| `RestaurantCLITest.java`, `RestaurantCLIRunTest.java`, `GameSnapshotTest.java`, `CustomerTest.java`, `TurnManagerTest.java`, `GameControllerTest.java`, `WaiterTest.java` | Check the new behaviour and account for the Host's turn and the fourth menu item. |
+| `tests/fixtures/m5/*.txt` | Answer the new prompts. The victory run now uses the Host, a combo and Happy Hour, so its schedule changed. |
+| `MainTest.java`, `M5IntegrationTest.java`, `Stage2IntegrationTest.java` | Verify the revised fixture outcomes through the launcher and CLI. |
+| `README.md`, `docs/class-contracts.md`, `docs/test-notes.md` | Document the new rules, contracts, file changes and reproducible outcomes. |

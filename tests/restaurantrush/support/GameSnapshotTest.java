@@ -21,6 +21,7 @@ public class GameSnapshotTest {
         testInitialStateAndTurnPhases();
         testProjectionAndDetachment();
         testPaidStatistics();
+        testHostAndHappyHourProjection();
         System.out.println("All GameSnapshot tests passed successfully!");
     }
 
@@ -179,8 +180,31 @@ public class GameSnapshotTest {
         equal(260.0 / 3, snapshot.averagePaidSatisfaction(), "Preserve fractional paid average without rounding");
     }
 
+    private static void testHostAndHappyHourProjection() {
+        Restaurant restaurant = new Restaurant();
+        TurnManager manager = new TurnManager(new Cashier());
+        GameSnapshot before = GameSnapshot.from(restaurant, manager);
+        equal(false, before.hostAvailable(), "No Host before the turn starts");
+        equal(false, before.happyHourAvailable(), "No activation before the turn starts");
+
+        manager.beginTurn(restaurant);
+        GameSnapshot start = GameSnapshot.from(restaurant, manager);
+        equal(true, start.hostAvailable(), "Host chooses first");
+        equal(true, start.happyHourAvailable(), "Activation offered at turn start");
+        equal(0, start.happyHourTurnsRemaining(), "Not active yet");
+
+        accepted(manager.activateHappyHour(restaurant));
+        GameSnapshot active = GameSnapshot.from(restaurant, manager);
+        equal(false, active.happyHourAvailable(), "Activation no longer offered");
+        equal(2, active.happyHourTurnsRemaining(), "Activation turn and the next");
+        equal(0, start.happyHourTurnsRemaining(), "Earlier snapshot is detached");
+
+        manager.recordHostTask();
+        equal(false, GameSnapshot.from(restaurant, manager).hostAvailable(), "Host choice used");
+    }
+
     private static GameSnapshot snapshotWith(List<Integer> waiting, List<CustomerView> customers, List<TableView> tables) {
-        return new GameSnapshot(1, 0, null, waiting, customers, tables, false, false, 0, 0, 0);
+        return new GameSnapshot(1, 0, null, waiting, customers, tables, false, false, false, 0, 0, 0, false, 0);
     }
 
     private static void assertUnmodifiable(GameSnapshot snapshot) {

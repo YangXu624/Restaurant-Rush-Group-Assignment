@@ -11,9 +11,9 @@ import restaurantrush.Main;
 public class MainTest {
     public static void main(String[] args) throws Exception {
         String victory = launch("victory.txt");
-        completed(victory, "Victory", "$64.80", "77.50", "Paid: 4 | Served: 5 | Unhappy departures: 0");
+        completed(victory, "Victory", "$59.94", "88.75", "Paid: 4 | Served: 5 | Unhappy departures: 0");
         String invalid = launch("invalid-input.txt");
-        completed(invalid, "Victory", "$64.80", "77.50", "Paid: 4 | Served: 5 | Unhappy departures: 0");
+        completed(invalid, "Victory", "$59.94", "88.75", "Paid: 4 | Served: 5 | Unhappy departures: 0");
         contains(invalid, "Invalid command.");
         contains(invalid, "IDs must be whole numbers");
         for (String fixture : List.of("defeat.txt", "abandonment.txt")) {
