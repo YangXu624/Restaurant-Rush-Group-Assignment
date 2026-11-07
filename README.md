@@ -221,7 +221,11 @@ The team successfully aligned and closed all Stage 1 open items from Section 9 o
 | `MainTest.java`, `M5IntegrationTest.java` | Verify the revised fixture outcomes through the launcher and CLI. |
 | `README.md`, `docs/test-notes.md` | Document the new rules, file changes and reproducible outcomes for both stages. |
 
-## 8. Changes from Stage 2 to Stage 3
+## 8. Final design diagrams
+
+- [Stage 3 class diagram (draw.io)](docs/stage3_class_diagram.drawio)
+
+## 9. Changes from Stage 2 to Stage 3
 
 [Compare the Stage 2 and Stage 3 tags](https://github.com/YangXu624/Restaurant-Rush-Group-Assignment/compare/stage-2...stage-3). File names below are grouped by their role. No files were deleted.
 
@@ -232,6 +236,7 @@ The team successfully aligned and closed all Stage 1 open items from Section 9 o
 | `HappyHour.java`, `HappyHourTest.java`, `HappyHourTurnTest.java` | Keep the promotion's duration, single activation and discount in one class, then check its timing and pricing during real turns. |
 | `tests/fixtures/stage2/baseline-commands.txt` | Keep the command schedule that `Stage2IntegrationTest` checks, now that the main victory fixture uses Stage 3 features. |
 | `docs/stage2_class_diagram.drawio` | Record the Stage 2 design. |
+| `docs/stage3_class_diagram.drawio` | Show the final Stage 3 class structure. |
 
 | Existing files changed | Reason |
 | --- | --- |

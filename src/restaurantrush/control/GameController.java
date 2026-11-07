@@ -9,7 +9,7 @@ import restaurantrush.support.ActionResult;
 import restaurantrush.support.GameSnapshot;
 
 /**
- * Coordinates Stage 1 actions using the supplied shared collaborators. Owner: M4: Nickolas.
+ * Coordinates game actions using the supplied shared collaborators. Owner: M4: Nickolas.
  * See docs/class-contracts.md for the implementation contract.
  */
 public class GameController {
