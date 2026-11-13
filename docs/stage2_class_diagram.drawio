@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="RestaurantRushStage2UML-CodeAligned">
   <diagram id="stage2-class" name="Stage 2 - Class Diagram">
-    <mxGraphModel dx="1027" dy="672" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="5620" pageHeight="3400" background="#FFFFFF" math="0" shadow="0">
+    <mxGraphModel dx="2236" dy="1464" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="5620" pageHeight="3400" background="#FFFFFF" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -181,9 +181,6 @@
         <mxCell id="cview_attributes" parent="cview" style="html=1;fontFamily=Arial;fontColor=#253342;strokeColor=#778491;strokeWidth=1;rounded=0;fillColor=#FFFFFF;align=left;verticalAlign=top;spacingTop=9;spacingLeft=12;fontSize=12;whiteSpace=wrap;" value="&lt;div style=&quot;line-height:20px&quot;&gt;- id: int&lt;br&gt;- satisfaction: int&lt;br&gt;- status: CustomerStatus&lt;br&gt;- orderStatus: OrderStatus [0..1]&lt;br&gt;- itemName: String [0..1]&lt;br&gt;- remainingUnits: Integer [0..1]&lt;br&gt;- tableId: Integer [0..1]&lt;br&gt;- customerType: String&lt;br&gt;- billCents: Integer [0..1]&lt;/div&gt;" vertex="1">
           <mxGeometry height="207" width="620" y="50" as="geometry" />
         </mxCell>
-        <mxCell id="cview_operations" parent="cview" style="html=1;fontFamily=Arial;fontColor=#253342;strokeColor=#778491;strokeWidth=1;rounded=0;fillColor=#FFFFFF;align=left;verticalAlign=top;spacingTop=9;spacingLeft=12;fontSize=12;whiteSpace=wrap;" value="" vertex="1">
-          <mxGeometry height="33" width="620" y="215" as="geometry" />
-        </mxCell>
         <mxCell id="tview" parent="1" style="html=1;fontFamily=Arial;fontColor=#253342;strokeColor=#778491;strokeWidth=1;swimlane;startSize=50;horizontal=1;collapsible=0;container=1;recursiveResize=0;fillColor=#EBEAF5;swimlaneFillColor=#FFFFFF;align=center;verticalAlign=middle;fontSize=12;whiteSpace=wrap;" value="&lt;span style=&quot;font-size:10px&quot;&gt;«record»&lt;/span&gt;&lt;br&gt;&lt;b&gt;TableView&lt;/b&gt;" vertex="1">
           <mxGeometry height="143" width="620" x="4660" y="2680" as="geometry" />
         </mxCell>
@@ -220,7 +217,7 @@
         <mxCell id="T_C_c" parent="1" style="html=1;whiteSpace=wrap;rounded=0;strokeColor=none;fillColor=none;fontFamily=Arial;fontSize=12;fontColor=#253342;align=center;verticalAlign=middle;" value="0..1" vertex="1">
           <mxGeometry height="22" width="50" x="3005" y="516.5" as="geometry" />
         </mxCell>
-        <mxCell id="assoc_C_O" edge="1" parent="1" source="customer" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;endArrow=none;startArrow=none;exitX=0.53;exitY=1;exitDx=0;exitDy=0;entryX=0.53;entryY=0;entryDx=0;entryDy=0;" target="order" value="">
+        <mxCell id="assoc_C_O" edge="1" parent="1" source="customer" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;startArrow=none;exitX=0.53;exitY=1;exitDx=0;exitDy=0;entryX=0.53;entryY=0;entryDx=0;entryDy=0;endArrow=open;endFill=0;endSize=11;" target="order" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="C_O_c" parent="1" style="html=1;whiteSpace=wrap;rounded=0;strokeColor=none;fillColor=none;fontFamily=Arial;fontSize=12;fontColor=#253342;align=center;verticalAlign=middle;" value="1" vertex="1">
@@ -229,7 +226,7 @@
         <mxCell id="C_O_o" parent="1" style="html=1;whiteSpace=wrap;rounded=0;strokeColor=none;fillColor=none;fontFamily=Arial;fontSize=12;fontColor=#253342;align=center;verticalAlign=middle;" value="0..1" vertex="1">
           <mxGeometry height="22" width="50" x="2720" y="1630" as="geometry" />
         </mxCell>
-        <mxCell id="assoc_O_Menu" edge="1" parent="1" source="order" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;endArrow=none;startArrow=none;exitX=1;exitY=0.33;exitDx=0;exitDy=0;entryX=0;entryY=0.33;entryDx=0;entryDy=0;" target="menu" value="">
+        <mxCell id="assoc_O_Menu" edge="1" parent="1" source="order" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;startArrow=none;exitX=1;exitY=0.33;exitDx=0;exitDy=0;entryX=0;entryY=0.33;entryDx=0;entryDy=0;endArrow=open;endFill=0;endSize=11;" target="menu" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="O_M_o" parent="1" style="html=1;whiteSpace=wrap;rounded=0;strokeColor=none;fillColor=none;fontFamily=Arial;fontSize=12;fontColor=#253342;align=center;verticalAlign=middle;" value="0..*" vertex="1">
@@ -250,16 +247,16 @@
         <mxCell id="R_M_m" parent="1" style="html=1;whiteSpace=wrap;rounded=0;strokeColor=none;fillColor=none;fontFamily=Arial;fontSize=12;fontColor=#253342;align=center;verticalAlign=middle;" value="3" vertex="1">
           <mxGeometry height="22" width="25" x="3344" y="1638" as="geometry" />
         </mxCell>
-        <mxCell id="dep_cli_ctrl" edge="1" parent="1" source="cli" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;endArrow=none;startArrow=none;exitX=1;exitY=0.35;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" target="controller" value="">
+        <mxCell id="dep_cli_ctrl" edge="1" parent="1" source="cli" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;startArrow=none;exitX=1;exitY=0.35;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;endArrow=open;endFill=0;endSize=11;" target="controller" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="dep_ctrl_tm" edge="1" parent="1" source="controller" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;endArrow=none;startArrow=none;exitX=0.48;exitY=1;exitDx=0;exitDy=0;entryX=0.48;entryY=0;entryDx=0;entryDy=0;" target="turn" value="">
+        <mxCell id="dep_ctrl_tm" edge="1" parent="1" source="controller" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;startArrow=none;exitX=0.48;exitY=1;exitDx=0;exitDy=0;entryX=0.48;entryY=0;entryDx=0;entryDy=0;endArrow=open;endFill=0;endSize=11;" target="turn" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="dep_ctrl_res" edge="1" parent="1" source="controller" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;endArrow=none;startArrow=none;exitX=1;exitY=0.38;exitDx=0;exitDy=0;entryX=0;entryY=0.18;entryDx=0;entryDy=0;" target="restaurant" value="">
+        <mxCell id="dep_ctrl_res" edge="1" parent="1" source="controller" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;startArrow=none;exitX=1;exitY=0.38;exitDx=0;exitDy=0;entryX=0;entryY=0.18;entryDx=0;entryDy=0;endArrow=open;endFill=0;endSize=11;" target="restaurant" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="dep_ctrl_waiter" edge="1" parent="1" source="controller" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;endArrow=none;startArrow=none;exitX=1;exitY=0.88;exitDx=0;exitDy=0;entryX=0;entryY=0.2;entryDx=0;entryDy=0;" target="waiter" value="">
+        <mxCell id="dep_ctrl_waiter" edge="1" parent="1" source="controller" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;startArrow=none;exitX=1;exitY=0.88;exitDx=0;exitDy=0;entryX=0;entryY=0.2;entryDx=0;entryDy=0;endArrow=open;endFill=0;endSize=11;" target="waiter" value="">
           <mxGeometry relative="1" x="0.0787" as="geometry">
             <Array as="points">
               <mxPoint x="1380" y="553" />
@@ -268,7 +265,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="dep_ctrl_chef" edge="1" parent="1" source="controller" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;endArrow=none;startArrow=none;exitX=1;exitY=0.93;exitDx=0;exitDy=0;entryX=0.51;entryY=0;entryDx=0;entryDy=0;" target="chef" value="">
+        <mxCell id="dep_ctrl_chef" edge="1" parent="1" source="controller" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;startArrow=none;exitX=1;exitY=0.93;exitDx=0;exitDy=0;entryX=0.51;entryY=0;entryDx=0;entryDy=0;endArrow=open;endFill=0;endSize=11;" target="chef" value="">
           <mxGeometry relative="1" x="0.0001" as="geometry">
             <Array as="points">
               <mxPoint x="1458" y="642" />
@@ -277,7 +274,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="dep_tm_cash" edge="1" parent="1" source="turn" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;endArrow=none;startArrow=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.45;entryY=0;entryDx=0;entryDy=0;" target="cashier" value="">
+        <mxCell id="dep_tm_cash" edge="1" parent="1" source="turn" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;startArrow=none;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.45;entryY=0;entryDx=0;entryDy=0;endArrow=open;endFill=0;endSize=11;" target="cashier" value="">
           <mxGeometry relative="1" x="0.0863" as="geometry">
             <Array as="points">
               <mxPoint x="1075" y="2249.7" />
@@ -301,7 +298,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="assoc_snap_cv" edge="1" parent="1" source="snapshot" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;endArrow=none;startArrow=none;exitX=0.28;exitY=1;exitDx=0;exitDy=0;entryX=0.28;entryY=0;entryDx=0;entryDy=0;" target="cview" value="">
+        <mxCell id="assoc_snap_cv" edge="1" parent="1" source="snapshot" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;startArrow=none;exitX=0.28;exitY=1;exitDx=0;exitDy=0;entryX=0.28;entryY=0;entryDx=0;entryDy=0;endArrow=open;endFill=0;endSize=11;" target="cview" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="S_CV_s" parent="1" style="html=1;whiteSpace=wrap;rounded=0;strokeColor=none;fillColor=none;fontFamily=Arial;fontSize=12;fontColor=#253342;align=center;verticalAlign=middle;" value="1" vertex="1">
@@ -310,7 +307,7 @@
         <mxCell id="S_CV_cv" parent="1" style="html=1;whiteSpace=wrap;rounded=0;strokeColor=none;fillColor=none;fontFamily=Arial;fontSize=12;fontColor=#253342;align=center;verticalAlign=middle;" value="0..6" vertex="1">
           <mxGeometry height="22" width="55" x="4772" y="2102" as="geometry" />
         </mxCell>
-        <mxCell id="assoc_snap_tv" edge="1" parent="1" source="snapshot" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;endArrow=none;startArrow=none;entryX=1;entryY=0.25;entryDx=0;entryDy=0;exitX=1;exitY=0.70;exitDx=0;exitDy=0;" target="tview" value="">
+        <mxCell id="assoc_snap_tv" edge="1" parent="1" source="snapshot" style="html=1;strokeColor=#83929F;strokeWidth=1.5;edgeStyle=orthogonalEdgeStyle;rounded=0;jumpStyle=arc;jumpSize=8;startArrow=none;entryX=1;entryY=0.25;entryDx=0;entryDy=0;exitX=1;exitY=0.70;exitDx=0;exitDy=0;endArrow=open;endFill=0;endSize=11;" target="tview" value="">
           <mxGeometry relative="1" x="-0.3216" as="geometry">
             <Array as="points">
               <mxPoint x="5383" y="1045.24" />
