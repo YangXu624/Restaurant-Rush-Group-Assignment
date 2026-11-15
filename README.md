@@ -4,7 +4,7 @@ Turn-based Java CLI restaurant management simulation developed for the **SC2002 
 
 Repository URL: [https://github.com/YangXu624/Restaurant-Rush-Group-Assignment](https://github.com/YangXu624/Restaurant-Rush-Group-Assignment)
 
-Video presentation: [https://youtu.be/iq6c-x9Tn2E](https://youtu.be/iq6c-x9Tn2E)
+Video presentation: [https://youtu.be/kcFVloIbs3Y](https://youtu.be/kcFVloIbs3Y)
 
 ### Video timestamps
 
@@ -21,7 +21,7 @@ Video presentation: [https://youtu.be/iq6c-x9Tn2E](https://youtu.be/iq6c-x9Tn2E)
 
 ## 1. Project Overview
 
-Restaurant Rush puts the player in charge of a restaurant for **18 turns**. Each turn, the player assigns limited staff actions to seat customers, take orders, prepare food and serve meals. The Cashier automatically collects eligible payments. Victory requires at least 4 paid customers, $45.00 revenue and 60 average paid-customer satisfaction by the end of turn 18.
+Restaurant Rush puts the player in charge of a restaurant for 18 turns. Each turn, the player assigns limited staff actions to seat customers, take orders, prepare food and serve meals. The Cashier automatically collects eligible payments. Victory requires at least 4 paid customers, $45.00 revenue and 60 average paid-customer satisfaction by the end of turn 18.
 
 The final game includes Regular, VIP and Critic customers, a Host with a separate seating action, a combo meal and a two-turn Happy Hour promotion. These features create choices about service priority, kitchen capacity and when to trade discounted bills for improved satisfaction. Arrivals and dish selection are deterministic, allowing the supplied fixtures to reproduce the same results.
 
