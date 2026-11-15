@@ -4,13 +4,28 @@ Turn-based Java CLI restaurant management simulation developed for the **SC2002 
 
 Repository URL: [https://github.com/YangXu624/Restaurant-Rush-Group-Assignment](https://github.com/YangXu624/Restaurant-Rush-Group-Assignment)
 
+Video presentation: [https://youtu.be/iq6c-x9Tn2E](https://youtu.be/iq6c-x9Tn2E)
+
+### Video timestamps
+
+| Start | Segment |
+| --- | --- |
+| [0:00](https://youtu.be/iq6c-x9Tn2E?t=0) | Project Overview |
+| [1:38](https://youtu.be/iq6c-x9Tn2E?t=98) | Game Demo |
+| [4:06](https://youtu.be/iq6c-x9Tn2E?t=246) | Class Design, Stage Evolution, and OODP Principles |
+| [8:48](https://youtu.be/iq6c-x9Tn2E?t=528) | Design Limitations and Trade-offs |
+| [9:29](https://youtu.be/iq6c-x9Tn2E?t=569) | Sequence Diagram and Scenario |
+| [12:12](https://youtu.be/iq6c-x9Tn2E?t=732) | Individual Reflections |
+
 ---
 
 ## 1. Project Overview
 
-Stage 3 adds a Host, a combo meal and a Happy Hour promotion to the playable Stage 2 game. The earlier games are available at the `stage-1` and `stage-2` tags.
+Restaurant Rush puts the player in charge of a restaurant for **18 turns**. Each turn, the player assigns limited staff actions to seat customers, take orders, prepare food and serve meals. The Cashier automatically collects eligible payments. Victory requires at least 4 paid customers, $45.00 revenue and 60 average paid-customer satisfaction by the end of turn 18.
 
-The simulation runs for a fixed sequence of **18 turns**. The player manages restaurant floor operations through a command-line interface (CLI), deciding on Happy Hour and directing a Host, Waiter and Chef each turn while an automated Cashier handles billing. Customer arrivals, menu selection, and order preparation follow a completely deterministic schedule.
+The final game includes Regular, VIP and Critic customers, a Host with a separate seating action, a combo meal and a two-turn Happy Hour promotion. These features create choices about service priority, kitchen capacity and when to trade discounted bills for improved satisfaction. Arrivals and dish selection are deterministic, allowing the supplied fixtures to reproduce the same results.
+
+The repository preserves three runnable versions at the `stage-1`, `stage-2` and `stage-3` tags. The sections below explain the final game's rules, commands, build instructions and changes between stages.
 
 ### Stage 1 Team Member Responsibilities & Module Ownership
 
