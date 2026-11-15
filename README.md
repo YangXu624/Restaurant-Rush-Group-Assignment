@@ -4,13 +4,28 @@ Turn-based Java CLI restaurant management simulation developed for the **SC2002 
 
 Repository URL: [https://github.com/YangXu624/Restaurant-Rush-Group-Assignment](https://github.com/YangXu624/Restaurant-Rush-Group-Assignment)
 
+Video presentation: [https://youtu.be/kcFVloIbs3Y](https://youtu.be/kcFVloIbs3Y)
+
+### Video timestamps
+
+| Start | Segment |
+| --- | --- |
+| [0:00](https://youtu.be/iq6c-x9Tn2E?t=0) | Project Overview |
+| [1:38](https://youtu.be/iq6c-x9Tn2E?t=98) | Game Demo |
+| [4:06](https://youtu.be/iq6c-x9Tn2E?t=246) | Class Design, Stage Evolution, and OODP Principles |
+| [8:48](https://youtu.be/iq6c-x9Tn2E?t=528) | Design Limitations and Trade-offs |
+| [9:29](https://youtu.be/iq6c-x9Tn2E?t=569) | Sequence Diagram and Scenario |
+| [12:12](https://youtu.be/iq6c-x9Tn2E?t=732) | Individual Reflections |
+
 ---
 
 ## 1. Project Overview
 
-Stage 3 adds a Host, a combo meal and a Happy Hour promotion to the playable Stage 2 game. The earlier games are available at the `stage-1` and `stage-2` tags.
+Restaurant Rush puts the player in charge of a restaurant for 18 turns. Each turn, the player assigns limited staff actions to seat customers, take orders, prepare food and serve meals. The Cashier automatically collects eligible payments. Victory requires at least 4 paid customers, $45.00 revenue and 60 average paid-customer satisfaction by the end of turn 18.
 
-The simulation runs for a fixed sequence of **18 turns**. The player manages restaurant floor operations through a command-line interface (CLI), deciding on Happy Hour and directing a Host, Waiter and Chef each turn while an automated Cashier handles billing. Customer arrivals, menu selection, and order preparation follow a completely deterministic schedule.
+The final game includes Regular, VIP and Critic customers, a Host with a separate seating action, a combo meal and a two-turn Happy Hour promotion. These features create choices about service priority, kitchen capacity and when to trade discounted bills for improved satisfaction. Arrivals and dish selection are deterministic, allowing the supplied fixtures to reproduce the same results.
+
+The repository preserves three runnable versions at the `stage-1`, `stage-2` and `stage-3` tags. The sections below explain the final game's rules, commands, build instructions and changes between stages.
 
 ### Stage 1 Team Member Responsibilities & Module Ownership
 
@@ -201,7 +216,7 @@ The team successfully aligned and closed all Stage 1 open items from Section 9 o
 
 ## 7. Changes from Stage 1 to Stage 2
 
-[Compare the Stage 1 tag with the merged Stage 2 gameplay](https://github.com/YangXu624/Restaurant-Rush-Group-Assignment/compare/stage-1...f56f8f5fdb2bb8b2faea68cbb9f7be0027036841). File names below are grouped by their role. No files were deleted.
+[Compare the Stage 1 and Stage 2 tags](https://github.com/YangXu624/Restaurant-Rush-Group-Assignment/compare/stage-1...stage-2). File names below are grouped by their role. No files were deleted.
 
 | New files | Reason |
 | --- | --- |
@@ -221,11 +236,7 @@ The team successfully aligned and closed all Stage 1 open items from Section 9 o
 | `MainTest.java`, `M5IntegrationTest.java` | Verify the revised fixture outcomes through the launcher and CLI. |
 | `README.md`, `docs/test-notes.md` | Document the new rules, file changes and reproducible outcomes for both stages. |
 
-## 8. Final design diagrams
-
-- [Stage 3 class diagram (draw.io)](docs/stage3_class_diagram.drawio)
-
-## 9. Changes from Stage 2 to Stage 3
+## 8. Changes from Stage 2 to Stage 3
 
 [Compare the Stage 2 and Stage 3 tags](https://github.com/YangXu624/Restaurant-Rush-Group-Assignment/compare/stage-2...stage-3). File names below are grouped by their role. No files were deleted.
 
@@ -235,8 +246,8 @@ The team successfully aligned and closed all Stage 1 open items from Section 9 o
 | `Host.java`, `HostIntegrationTest.java` | Add the Host's separate seating action and check it alongside the Waiter and Chef. |
 | `HappyHour.java`, `HappyHourTest.java`, `HappyHourTurnTest.java` | Keep the promotion's duration, single activation and discount in one class, then check its timing and pricing during real turns. |
 | `tests/fixtures/stage2/baseline-commands.txt` | Keep the command schedule that `Stage2IntegrationTest` checks, now that the main victory fixture uses Stage 3 features. |
-| `docs/stage2_class_diagram.drawio` | Record the Stage 2 design. |
-| `docs/stage3_class_diagram.drawio` | Show the final Stage 3 class structure. |
+| `docs/stage2_class_diagram.png` | Record the Stage 2 design and provide a readable image export. |
+| `docs/stage3_class_diagram.png` | Show the Stage 3 class structure and provide a readable image export. |
 
 | Existing files changed | Reason |
 | --- | --- |
@@ -250,3 +261,14 @@ The team successfully aligned and closed all Stage 1 open items from Section 9 o
 | `tests/fixtures/m5/*.txt` | Answer the new prompts. The victory run now uses the Host, a combo and Happy Hour, so its schedule changed. |
 | `MainTest.java`, `M5IntegrationTest.java`, `Stage2IntegrationTest.java` | Verify the revised fixture outcomes through the launcher and CLI. |
 | `README.md`, `docs/class-contracts.md`, `docs/test-notes.md` | Document the new rules, contracts, file changes and reproducible outcomes. |
+
+## 9. Final design diagrams
+
+- [Sequence diagram (PNG)](docs/sequence_diagram.png)
+- [Stage 1 class diagram (PNG)](docs/stage1_class_diagram.png)
+- [Stage 2 class diagram (PNG)](docs/stage2_class_diagram.png)
+- [Stage 3 class diagram (PNG)](docs/stage3_class_diagram.png)
+
+## 10. AI usage records
+
+The [AI chat histories index](ai-history/README.md) lists each group member's usage and links to the available transcripts.
