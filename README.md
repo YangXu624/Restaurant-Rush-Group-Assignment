@@ -221,14 +221,7 @@ The team successfully aligned and closed all Stage 1 open items from Section 9 o
 | `MainTest.java`, `M5IntegrationTest.java` | Verify the revised fixture outcomes through the launcher and CLI. |
 | `README.md`, `docs/test-notes.md` | Document the new rules, file changes and reproducible outcomes for both stages. |
 
-## 8. Final design diagrams
-
-- [Stage 3 class diagram (PNG)](docs/stage3_class_diagram.png)
-- [Sequence diagram (PNG)](docs/sequence_diagram.png)
-- [Stage 1 class diagram (PNG)](docs/stage1_class_diagram.png)
-- [Stage 2 class diagram (PNG)](docs/stage2_class_diagram.png)
-
-## 9. Changes from Stage 2 to Stage 3
+## 8. Changes from Stage 2 to Stage 3
 
 [Compare the Stage 2 and Stage 3 tags](https://github.com/YangXu624/Restaurant-Rush-Group-Assignment/compare/stage-2...stage-3). File names below are grouped by their role. No files were deleted.
 
@@ -238,8 +231,8 @@ The team successfully aligned and closed all Stage 1 open items from Section 9 o
 | `Host.java`, `HostIntegrationTest.java` | Add the Host's separate seating action and check it alongside the Waiter and Chef. |
 | `HappyHour.java`, `HappyHourTest.java`, `HappyHourTurnTest.java` | Keep the promotion's duration, single activation and discount in one class, then check its timing and pricing during real turns. |
 | `tests/fixtures/stage2/baseline-commands.txt` | Keep the command schedule that `Stage2IntegrationTest` checks, now that the main victory fixture uses Stage 3 features. |
-| `docs/stage2_class_diagram.drawio`, `docs/stage2_class_diagram.png` | Record the Stage 2 design and provide a readable image export. |
-| `docs/stage3_class_diagram.drawio`, `docs/stage3_class_diagram.png` | Show the Stage 3 class structure and provide a readable image export. |
+| `docs/stage2_class_diagram.png` | Record the Stage 2 design and provide a readable image export. |
+| `docs/stage3_class_diagram.png` | Show the Stage 3 class structure and provide a readable image export. |
 
 | Existing files changed | Reason |
 | --- | --- |
@@ -254,11 +247,13 @@ The team successfully aligned and closed all Stage 1 open items from Section 9 o
 | `MainTest.java`, `M5IntegrationTest.java`, `Stage2IntegrationTest.java` | Verify the revised fixture outcomes through the launcher and CLI. |
 | `README.md`, `docs/class-contracts.md`, `docs/test-notes.md` | Document the new rules, contracts, file changes and reproducible outcomes. |
 
+## 9. Final design diagrams
 
-## 10. Final submission documentation
+- [Sequence diagram (PNG)](docs/sequence_diagram.png)
+- [Stage 1 class diagram (PNG)](docs/stage1_class_diagram.png)
+- [Stage 2 class diagram (PNG)](docs/stage2_class_diagram.png)
+- [Stage 3 class diagram (PNG)](docs/stage3_class_diagram.png)
 
-The stage comparisons above describe the files at the tagged versions. Subsequent documentation updates on this branch add the sequence diagram and refine the class diagram PNGs. The editable `docs/stage1_class_diagram.drawio`, `docs/stage2_class_diagram.drawio` and `docs/stage3_class_diagram.drawio` files were removed during final preparation to keep the repository focused on the image exports. The tagged versions retain their original files.
-
-## 11. AI usage records
+## 10. AI usage records
 
 The [AI chat histories index](ai-history/README.md) lists each group member's usage and links to the available transcripts.
