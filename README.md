@@ -10,12 +10,12 @@ Video presentation: [https://youtu.be/kcFVloIbs3Y](https://youtu.be/kcFVloIbs3Y)
 
 | Start | Segment |
 | --- | --- |
-| [0:00](https://youtu.be/iq6c-x9Tn2E?t=0) | Project Overview |
-| [1:38](https://youtu.be/iq6c-x9Tn2E?t=98) | Game Demo |
-| [4:06](https://youtu.be/iq6c-x9Tn2E?t=246) | Class Design, Stage Evolution, and OODP Principles |
-| [8:48](https://youtu.be/iq6c-x9Tn2E?t=528) | Design Limitations and Trade-offs |
-| [9:29](https://youtu.be/iq6c-x9Tn2E?t=569) | Sequence Diagram and Scenario |
-| [12:12](https://youtu.be/iq6c-x9Tn2E?t=732) | Individual Reflections |
+| [0:00](https://youtu.be/kcFVloIbs3Y?t=0) | Project Overview |
+| [1:38](https://youtu.be/kcFVloIbs3Y?t=98) | Game Demo |
+| [4:06](https://youtu.be/kcFVloIbs3Y?t=246) | Class Design, Stage Evolution, and OODP Principles |
+| [8:48](https://youtu.be/kcFVloIbs3Y?t=528) | Design Limitations and Trade-offs |
+| [9:29](https://youtu.be/kcFVloIbs3Y?t=569) | Sequence Diagram and Scenario |
+| [12:12](https://youtu.be/kcFVloIbs3Y?t=732) | Individual Reflections |
 
 ---
 
